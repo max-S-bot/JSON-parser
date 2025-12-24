@@ -2,6 +2,8 @@ package io.github.mxz_schwarz.parser;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.math.BigInteger;
 import java.math.BigDecimal;
@@ -14,11 +16,21 @@ import java.util.function.Function;
  */
 public class JSON {
 
-    private static final String WHITESPACE = " \n\r\t";
-    private static final java.util.regex.Pattern NAME_REGEX = 
-        java.util.regex.Pattern.compile("\"[a-zA-Z][a-zA-Z0-9_]*\"\\s*");
-    private static final String INVALID_STR_CHARS = "\b\f\n\r\t";
-    private static final String DIGITS = "0123456789"; 
+    private static final Set<Character> WHITESPACE = Set.of(' ', '\n', '\r', '\t');
+    private static final Set<Character> DIGITS = Set.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'); 
+    private static final Set<Character> NAME_START_CHARS = 
+    Set.copyOf(new HashSet<>() {{
+        for (int i=0; i<26; i++) {
+            add((char) ('A'+i));
+            add((char) ('a'+i));
+        }
+    }});
+    private static final Set<Character> NAME_CHARS = 
+    Set.copyOf(new HashSet<>(NAME_START_CHARS) {{
+        addAll(DIGITS);
+        add('_');
+    }});
+    private static final Set<Character> INVALID_STR_CHARS = Set.of('\b', '\f', '\n', '\r', '\t');
 
     private JSON() {}
 
@@ -31,13 +43,12 @@ public class JSON {
      */
     public static Obj parse(String jsonStr) 
         throws CheckedJSONParseException {
-        int idx = 0;
-        while (WHITESPACE.contains(jsonStr.substring(idx, idx+1)))
-            idx++;
+        int idx = skipWS(jsonStr, 0);
         try {
             Obj obj = parseVal(jsonStr, idx);
             idx += obj.numChars();
-            if (jsonStr.substring(idx).trim().length() != 0)
+            idx += skipWS(jsonStr, idx);
+            if (idx != jsonStr.length())
                 throw new JSONParseException("Invalid JSON");
             return obj;
         } catch (JSONParseException jpe) {
@@ -57,19 +68,20 @@ public class JSON {
     private static Obj parseObj(String objStr, int idx) {
         int start = idx++;
         java.util.Map<String, Obj> obj = new HashMap<>();
-        // I'll refactor so that this no longer 
-        // uses regexps to match identifiers.
         for (; objStr.charAt(idx) != '}';) {
-            int curIdx = objStr.indexOf(":", idx);
-            if (curIdx == -1) 
+            idx += skipWS(objStr, idx);
+            StringBuilder name = new StringBuilder();
+            if (!NAME_START_CHARS.contains(objStr.charAt(idx)))
+                throw new JSONParseException("Invalid name");
+            name.append(objStr.charAt(idx++));
+            while (NAME_CHARS.contains(objStr.charAt(idx)))
+                name.append(objStr.charAt(idx++));
+            idx += skipWS(objStr, idx);
+            if (objStr.charAt(idx++) != ':')
                 throw new JSONParseException("Invalid entry");
-            String name = objStr.substring(idx+1, curIdx++);
-            if (!NAME_REGEX.matcher(name).matches())
-                throw new JSONParseException("Invalid key");
-            while (WHITESPACE.contains(objStr.substring(curIdx, curIdx+1)))
-                curIdx++;
-            obj.put(name, parseVal(objStr, curIdx));
-            idx = curIdx + obj.get(name).numChars();
+            idx += skipWS(objStr, idx);
+            obj.put(name.toString(), parseVal(objStr, idx));
+            idx = idx + obj.get(name.toString()).numChars();
             if (objStr.charAt(idx) != ',' && objStr.charAt(idx) != '}')
                 throw new JSONParseException("Invalid object");
         }
@@ -86,15 +98,15 @@ public class JSON {
      * isn't a valid JSON array.
      */
     private static Obj parseArr(String arrStr, int idx) {
-        int start = idx;
+        int start = idx++;
         List<Obj> arr = new LinkedList<>();
-        for (; arrStr.charAt(idx) != ']'; idx += arr.getLast().numChars()) {
-            while (WHITESPACE.contains(arrStr.substring(idx, idx+1)))
-                idx++;
+        for (; arrStr.charAt(idx) != ']';) {
+            idx += skipWS(arrStr, idx);
             arr.add(parseVal(arrStr, idx));
-            while (WHITESPACE.contains(arrStr.substring(idx, idx+1)))
-                idx++;
-            if (arrStr.charAt(idx) != ',' && arrStr.charAt(idx) != ']')
+            idx += arr.getLast().numChars();
+            idx += skipWS(arrStr, idx);
+            if (idx >= arrStr.length() || 
+            (arrStr.charAt(idx) != ',' && arrStr.charAt(idx) != ']'))
                 throw new JSONParseException("Invalid array");
         }
         return new Arr(arr, idx - start);   
@@ -120,7 +132,7 @@ public class JSON {
         boolean decimal = false;
         StringBuilder num = new StringBuilder();
         do num.append(numStr.charAt(idx++));
-        while (DIGITS.contains(numStr.substring(idx, idx+1)) || 
+        while (DIGITS.contains(numStr.charAt(idx)) || 
         (!decimal && (decimal = numStr.charAt(idx) == '.')));
         if (num.charAt(num.length()-1) == '.' || 
         (num.charAt(0) == 0 && num.length() > 1 && num.charAt(1) != '.'))
@@ -188,9 +200,9 @@ public class JSON {
                     case 't' -> '\t';
                     case 'u' -> (char) ('\u0000' + // this needs more error handling
                     Integer.parseInt(str.substring(idx, idx+=4), 16)); 
-                    default -> throw new JSONParseException("Invalid escape character");
+                    default -> throw new JSONParseException("Invalid escape sequence");
                 });
-            else if (INVALID_STR_CHARS.contains(str.substring(idx, idx+1)))
+            else if (INVALID_STR_CHARS.contains(str.charAt(idx)))
                 throw new JSONParseException("Invalid literal character");
             else if (idx == str.length()-1)
                 throw new JSONParseException("Invalid String");
@@ -228,6 +240,12 @@ public class JSON {
             case '{' -> parseObj(jsonStr, idx);
             default -> throw new JSONParseException("Invalid value");
         };
+    }
+
+    private static int skipWS(String str, int idx) {
+        int n = 0;
+        while(WHITESPACE.contains(str.charAt(idx+n++)));
+        return n-1;
     }
 
     /**

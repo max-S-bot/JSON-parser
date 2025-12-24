@@ -50,8 +50,10 @@ public abstract class Obj {
     }
 
     
-    public boolean equals(Obj o) {
-        return Objects.equals(val(), o.val());
+    public boolean equals(Object o) {
+        if (o instanceof Obj obj)
+            return Objects.equals(val(), obj.val());
+        else return false;
     }
 
 }

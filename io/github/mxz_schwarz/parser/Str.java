@@ -1,6 +1,6 @@
 package io.github.mxz_schwarz.parser;
 
-class Str extends Obj{
+class Str extends Obj {
 
     private final String val;
     private final int numChars;

@@ -1,27 +1,23 @@
 package io.github.mxz_schwarz.parser;
 
 public class Bool extends Obj {
-    static final Bool TRUE = new Bool(true);
-    static final Bool FALSE = new Bool(false);
+    static final Bool TRUE = new Bool();
+    static final Bool FALSE = new Bool();
 
-    private final boolean val;
-
-    private Bool (boolean val) {
-        this.val = val;
-    }
+    private Bool () {}
 
     @Override
     public boolean asBool() {
-        return val;
+        return this == TRUE;
     }
 
     @Override
     int numChars() {
-        return val ? 4 : 5;
+        return this == TRUE ? 4 : 5;
     }
 
     @Override
     Object val() {
-        return val;
+        return this == TRUE;
     }
 }

@@ -1,6 +1,5 @@
 package io.github.mxz_schwarz.parser;
 
-import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
@@ -36,9 +35,8 @@ public class JSON {
         while (WHITESPACE.contains(jsonStr.substring(idx, idx+1)))
             idx++;
         try {
-            Type type = Type.from(jsonStr.charAt(idx));
-            Obj obj = type.parser.apply(jsonStr, idx);
-            idx += obj.numChars;
+            Obj obj = parseVal(jsonStr, idx);
+            idx += obj.numChars();
             if (jsonStr.substring(idx).trim().length() != 0)
                 throw new JSONParseException("Invalid JSON");
             return obj;
@@ -56,10 +54,10 @@ public class JSON {
      * parsed object.
      * @throws JSONParseException
      */
-    static Obj parseObj(String objStr, int idx) {
-        int start = idx;
-        Map<String, Obj> obj = new HashMap<>();
-        //  I'll refactor so that this no longer 
+    private static Obj parseObj(String objStr, int idx) {
+        int start = idx++;
+        java.util.Map<String, Obj> obj = new HashMap<>();
+        // I'll refactor so that this no longer 
         // uses regexps to match identifiers.
         for (; objStr.charAt(idx) != '}';) {
             int curIdx = objStr.indexOf(":", idx);
@@ -70,13 +68,12 @@ public class JSON {
                 throw new JSONParseException("Invalid key");
             while (WHITESPACE.contains(objStr.substring(curIdx, curIdx+1)))
                 curIdx++;
-            Type type = Type.from(objStr.charAt(curIdx)); 
-            obj.put(name, type.parser.apply(objStr, curIdx));
-            idx = curIdx + obj.get(name).numChars;
+            obj.put(name, parseVal(objStr, curIdx));
+            idx = curIdx + obj.get(name).numChars();
             if (objStr.charAt(idx) != ',' && objStr.charAt(idx) != '}')
                 throw new JSONParseException("Invalid object");
         }
-        return new Obj(obj, idx - start);
+        return new Map(obj, idx - start);
     }
 
     /**
@@ -88,20 +85,19 @@ public class JSON {
      * @throws JSONParseException When the array being parsed 
      * isn't a valid JSON array.
      */
-    static Obj parseArr(String arrStr, int idx) {
+    private static Obj parseArr(String arrStr, int idx) {
         int start = idx;
         List<Obj> arr = new LinkedList<>();
-        for (; arrStr.charAt(idx) != ']'; idx += arr.getLast().numChars) {
+        for (; arrStr.charAt(idx) != ']'; idx += arr.getLast().numChars()) {
             while (WHITESPACE.contains(arrStr.substring(idx, idx+1)))
                 idx++;
-            Type type = Type.from(arrStr.charAt(idx));
-            arr.add(type.parser.apply(arrStr, idx));
+            arr.add(parseVal(arrStr, idx));
             while (WHITESPACE.contains(arrStr.substring(idx, idx+1)))
                 idx++;
             if (arrStr.charAt(idx) != ',' && arrStr.charAt(idx) != ']')
                 throw new JSONParseException("Invalid array");
         }
-        return new Obj(arr, idx - start);   
+        return new Arr(arr, idx - start);   
     }   
 
     /**
@@ -119,8 +115,8 @@ public class JSON {
      * @throws JSONParseException When {@code numStr} can't be parsed as a 
      * valid number from the specified index.
      */
-    // needs to handle hex numbers.
-    static Obj parseNum(String numStr, int idx) {
+    // needs to handle scientific notation.
+    private static Obj parseNum(String numStr, int idx) {
         boolean decimal = false;
         StringBuilder num = new StringBuilder();
         do num.append(numStr.charAt(idx++));
@@ -132,9 +128,9 @@ public class JSON {
         Function<String, Number> primParser = decimal ? Double::parseDouble : Long::parseLong;
         Function<String, Number> bigParser = decimal ? BigDecimal::new : BigInteger::new;
         try {
-            return new Obj(primParser.apply(num.toString()), num.length());
+            return new Num(primParser.apply(num.toString()), num.length());
         } catch (NumberFormatException nfe) {
-            return new Obj(bigParser.apply(num.toString()), num.length());
+            return new Num(bigParser.apply(num.toString()), num.length());
         }
     }
 
@@ -151,15 +147,15 @@ public class JSON {
      * (the characters following {@code "true"} and {@code "false"}
      * are completely ignored by this method).
      */
-    static Obj parseBool(String bool, int idx) {
+    private static Obj parseBool(String bool, int idx) {
         int end = bool.indexOf("e", idx);
         if (end == -1) 
             throw new JSONParseException("Invalid boolean");
         String b = bool.substring(idx, end);
         if (b.equals("true"))
-            return Obj.TRUE;
+            return Bool.TRUE;
         else if (b.equals("false"))
-            return Obj.FALSE;
+            return Bool.FALSE;
         throw new JSONParseException("Invalid boolean");
     }
 
@@ -176,7 +172,7 @@ public class JSON {
      * or a back slash isn't followed by a valid sequence of characters
      * that can be escaped.
      */
-    static Obj parseStr(String str, int idx) {
+    private static Obj parseStr(String str, int idx) {
         StringBuilder sb = new StringBuilder();
         int start = idx;
         for (; str.charAt(++idx) != '"';) {
@@ -201,7 +197,7 @@ public class JSON {
             else
                 sb.append(str.charAt(idx));
         }
-        return new Obj(sb.toString(), idx - start);
+        return new Str(sb.toString(), idx - start);
     }
 
     /**
@@ -214,11 +210,24 @@ public class JSON {
      * at {@code idx} in {@code nullStr} don't correspond exactly to the 
      * {@code String} {@code "null"}.
      */
-    static Obj parseNull(String nullStr, int idx) {
+    private static Obj parseNull(String nullStr, int idx) {
         if (nullStr.indexOf("null", idx) == idx)
-            return Obj.NULL;
+            return Null.NULL;
         else 
             throw new JSONParseException("Invalid null");
+    }
+
+    private static Obj parseVal(String jsonStr, int idx) {
+        return switch (jsonStr.charAt(idx)) {
+            case 't', 'f' -> parseBool(jsonStr, idx);
+            case 'n' -> parseNull(jsonStr, idx);
+            case '-','0','1','2','3','4','5','6','7','8','9'
+                -> parseNum(jsonStr, idx);
+            case '"' -> parseStr(jsonStr, idx);
+            case '[' -> parseArr(jsonStr, idx);
+            case '{' -> parseObj(jsonStr, idx);
+            default -> throw new JSONParseException("Invalid value");
+        };
     }
 
     /**

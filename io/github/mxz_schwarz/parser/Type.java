@@ -26,7 +26,7 @@ public enum Type {
             case '"' -> Type.STR;
             case '[' -> Type.ARR;
             case '{' -> Type.OBJ;
-            default -> throw new JSONParseException("Invalid value"),
+            default -> throw new JSONParseException("Invalid value");
         };
     }
 }

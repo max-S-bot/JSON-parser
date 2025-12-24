@@ -24,8 +24,9 @@ public class JSON {
         int idx = 0;
         while (WHITESPACE.contains(jsonStr.substring(idx, idx+1)))
             idx++;
+        Type type = Type.from(jsonStr.charAt(idx));
         try {
-            return parseObj(jsonStr, idx);
+            return type.parser.apply(jsonStr, idx);
         } catch (JSONParseException jpe) {
             throw new CheckedJSONParseException(jpe);
         }
@@ -81,11 +82,6 @@ public class JSON {
      * @throws JSONParseException when
      */
     static Obj parseNum(String numStr, int idx) {
-        int end = numStr.indexOf(",", idx);
-        // needs more stuff to handle whether this is 
-        // in an object or an array.
-        if (end == -1) end = numStr.indexOf("}", idx);
-
         boolean decimal = numStr.indexOf(".", idx) != -1; 
         Function<String, Number> primParser = decimal ? Double::parseDouble : Long::parseLong;
         Function<String, Number> bigParser = decimal ? BigDecimal::new : BigInteger::new;
@@ -177,7 +173,6 @@ public class JSON {
     }
 
     /**
-     * 
      * @param path a {@code java.nio.file.Path} instance 
      * that corresponds to a JSON file to be parsed.
      * @return an {@code Obj} representing the parsed JSON file.

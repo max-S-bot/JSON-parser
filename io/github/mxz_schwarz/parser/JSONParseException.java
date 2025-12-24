@@ -14,13 +14,22 @@ package io.github.mxz_schwarz.parser;
  * control, type safety and clarity than simply chaining with a {@code RuntimeException}
  * so that intermediate methods don't have to declare that they throw an exception that 
  * they don't intend to handle.
+ * @author max-S-bot
  */
 public class JSONParseException extends RuntimeException {
 
+    /**
+     * @param message A {@code String} explaining {@code this}
+     * {@code JSONParseException}.
+     */
     JSONParseException(String message) {
         super(message);
     }
 
+    /**
+     * @param cjpe A {@code CheckedJSONParseException}
+     * which is the cause of {@code this}.
+     */
     JSONParseException(CheckedJSONParseException cjpe) {
         super(cjpe);
     }

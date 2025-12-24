@@ -2,7 +2,11 @@ package io.github.mxz_schwarz.parser;
 
 import java.util.function.BiFunction;
 
-
+/**
+ * An {@code enum} that represents all the JSON
+ * data types.
+ * @author max-S-bot
+ */
 public enum Type {
     STR(JSON::parseStr),
     BOOL(JSON::parseBool), 

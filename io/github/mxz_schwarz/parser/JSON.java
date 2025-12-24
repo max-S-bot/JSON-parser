@@ -1,42 +1,67 @@
 package io.github.mxz_schwarz.parser;
 
 import java.util.Map;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
-import java.util.regex.*;
 import java.math.BigInteger;
 import java.math.BigDecimal;
 import java.util.function.Function;
-import static io.github.mxz_schwarz.parser.Type.*;
 
+/**
+ * {@code class} that does most of the parsing 
+ * legwork via the public overloaded {@code JSON.parse} methods.
+ * @author max-S-bot
+ */
 public class JSON {
 
     private static final String WHITESPACE = " \n\r\t";
-    private static final Pattern NAME_REGEX = Pattern.compile("\\s*\"[a-zA-Z][a-zA-Z0-9_]*\"\\s*");
+    private static final java.util.regex.Pattern NAME_REGEX = 
+        java.util.regex.Pattern.compile("\"[a-zA-Z][a-zA-Z0-9_]*\"\\s*");
     private static final String INVALID_STR_CHARS = "\b\f\n\r\t";
+    private static final String DIGITS = "0123456789"; 
 
     private JSON() {}
 
+    /**
+     * @param jsonStr A {@code String} representing the 
+     * JSON data to be parsed.
+     * @return A {@code Obj} representing the parsed data.
+     * @throws CheckedJSONParseException When {@code jsonStr}
+     * does not represent valid JSON data.
+     */
     public static Obj parse(String jsonStr) 
         throws CheckedJSONParseException {
         int idx = 0;
         while (WHITESPACE.contains(jsonStr.substring(idx, idx+1)))
             idx++;
-        Type type = Type.from(jsonStr.charAt(idx));
         try {
-            return type.parser.apply(jsonStr, idx);
+            Type type = Type.from(jsonStr.charAt(idx));
+            Obj obj = type.parser.apply(jsonStr, idx);
+            idx += obj.numChars;
+            if (jsonStr.substring(idx).trim().length() != 0)
+                throw new JSONParseException("Invalid JSON");
+            return obj;
         } catch (JSONParseException jpe) {
             throw new CheckedJSONParseException(jpe);
         }
     }
 
+    /**
+     * @param objStr A {@code String} such that
+     * {@code objStr.charAt(idx) == '{'}.
+     * @param idx The index at which to start 
+     * parsing the object.
+     * @return A {@code Obj} that represents the
+     * parsed object.
+     * @throws JSONParseException
+     */
     static Obj parseObj(String objStr, int idx) {
-        Map<String, Obj> obj = new HashMap<>();
         int start = idx;
-        int n = objStr.length();
-        for (; idx != n;) {
+        Map<String, Obj> obj = new HashMap<>();
+        //  I'll refactor so that this no longer 
+        // uses regexps to match identifiers.
+        for (; objStr.charAt(idx) != '}';) {
             int curIdx = objStr.indexOf(":", idx);
             if (curIdx == -1) 
                 throw new JSONParseException("Invalid entry");
@@ -48,47 +73,68 @@ public class JSON {
             Type type = Type.from(objStr.charAt(curIdx)); 
             obj.put(name, type.parser.apply(objStr, curIdx));
             idx = curIdx + obj.get(name).numChars;
+            if (objStr.charAt(idx) != ',' && objStr.charAt(idx) != '}')
+                throw new JSONParseException("Invalid object");
         }
-        //fix
-        return new Obj(obj, idx-start);
+        return new Obj(obj, idx - start);
     }
 
+    /**
+     * @param arrStr A {@code String} such that 
+     * {@code arrStr.charAt(idx) == '['}.
+     * @param idx The index at which to start parsing
+     * {@code arrStr}.
+     * @return A {@code Obj} representing the parsed array.
+     * @throws JSONParseException When the array being parsed 
+     * isn't a valid JSON array.
+     */
     static Obj parseArr(String arrStr, int idx) {
-        final int n = arrStr.length();
+        int start = idx;
         List<Obj> arr = new LinkedList<>();
-        for (; idx != n;) {
+        for (; arrStr.charAt(idx) != ']'; idx += arr.getLast().numChars) {
             while (WHITESPACE.contains(arrStr.substring(idx, idx+1)))
                 idx++;
             Type type = Type.from(arrStr.charAt(idx));
             arr.add(type.parser.apply(arrStr, idx));
-            idx = idx + arr.getLast().numChars;
+            while (WHITESPACE.contains(arrStr.substring(idx, idx+1)))
+                idx++;
+            if (arrStr.charAt(idx) != ',' && arrStr.charAt(idx) != ']')
+                throw new JSONParseException("Invalid array");
         }
-        // fix
-        return new Obj(arr.toArray(Obj[]::new), -1);   
+        return new Obj(arr, idx - start);   
     }   
 
     /**
-     * 
-     * @param numStr a {@code String} such that
+     * @param numStr A {@code String} such that
      * {@code (numStr.charAt(idx) >= '0' && numStr.charAt(idx) <= '9')
-     *  || numStr.charAt(idx) == '-'}
-     * @param idx the index in {@code numStr} at which the number to
-     * be parsed starts
-     * @return an {@code Obj} instance that describes the {@code Number} 
+     *  || numStr.charAt(idx) == '-'}.
+     * @param idx The index in {@code numStr} at which the number to
+     * be parsed starts.
+     * @return A {@code Obj} that describes the {@code Number} 
      * that was parsed. If the number is an integer the {@code Number}
-     * returns a {@code Long} if it can be precisely represented by one.
-     * If the number is a decimal, the 
-     *  
-     * @throws JSONParseException when
+     * is a {@code Long} if it can be precisely represented by one, otherwise
+     * it is a {@code BigInteger}. If the number is a decimal, it's parsed 
+     * as a {@code Double}(again, if it can be precisely represented by one),
+     * otherwise it is a {@code BigDecimal}.
+     * @throws JSONParseException When {@code numStr} can't be parsed as a 
+     * valid number from the specified index.
      */
+    // needs to handle hex numbers.
     static Obj parseNum(String numStr, int idx) {
-        boolean decimal = numStr.indexOf(".", idx) != -1; 
+        boolean decimal = false;
+        StringBuilder num = new StringBuilder();
+        do num.append(numStr.charAt(idx++));
+        while (DIGITS.contains(numStr.substring(idx, idx+1)) || 
+        (!decimal && (decimal = numStr.charAt(idx) == '.')));
+        if (num.charAt(num.length()-1) == '.' || 
+        (num.charAt(0) == 0 && num.length() > 1 && num.charAt(1) != '.'))
+            throw new JSONParseException("Invalid Number");
         Function<String, Number> primParser = decimal ? Double::parseDouble : Long::parseLong;
         Function<String, Number> bigParser = decimal ? BigDecimal::new : BigInteger::new;
         try {
-            return new Obj(primParser.apply(num.toString()), -1, NUM);
+            return new Obj(primParser.apply(num.toString()), num.length());
         } catch (NumberFormatException nfe) {
-            return new Obj(bigParser.apply(num.toString()), -1, NUM);
+            return new Obj(bigParser.apply(num.toString()), num.length());
         }
     }
 
@@ -111,18 +157,19 @@ public class JSON {
             throw new JSONParseException("Invalid boolean");
         String b = bool.substring(idx, end);
         if (b.equals("true"))
-            return new Obj(true, 4);
+            return Obj.TRUE;
         else if (b.equals("false"))
-            return new Obj(false, 5);
+            return Obj.FALSE;
         throw new JSONParseException("Invalid boolean");
     }
 
     /**
-     * @param str {@code String} such that 
-     * {@code str.charAt(idx) == '"'}
-     * @param idx the index at which to begin 
-     * parsing a {@code String} from {@code str}
-     * @return an Obj
+     * @param str A {@code String} such that 
+     * {@code str.charAt(idx) == '"'}.
+     * @param idx The index at which to begin 
+     * parsing a {@code String} from {@code str}.
+     * @return A {@code Obj} that describes the {@code String}
+     * that was parsed.
      * @throws JSONParseException When the end of {@code str}
      * is reached before an unescaped quote, {@code str}
      * contains a character that should have been escaped but wasn't, 
@@ -145,7 +192,7 @@ public class JSON {
                     case 't' -> '\t';
                     case 'u' -> (char) ('\u0000' + // this needs more error handling
                     Integer.parseInt(str.substring(idx, idx+=4), 16)); 
-                    default -> throw new JSONParseException("Invalid character");
+                    default -> throw new JSONParseException("Invalid escape character");
                 });
             else if (INVALID_STR_CHARS.contains(str.substring(idx, idx+1)))
                 throw new JSONParseException("Invalid literal character");
@@ -154,32 +201,34 @@ public class JSON {
             else
                 sb.append(str.charAt(idx));
         }
-        return new Obj(sb.toString(), idx-start);
-    }
-    /**
-     * @param nullStr A {@code String} such that 
-     * {@code nullStr.charAt(idx) == 'n'}
-     * @param idx the index from which to start parsing {@code null}
-     * @return an {@code Obj} instance that describes a {@code null} value;
-     * @throws JSONParseException When the four characters starting
-     * at {@code idx} in {@code nullStr} don't correspond exactly to the 
-     * {@code String} {@code "null"}
-     */
-    static Obj parseNull(String nullStr, int idx) {
-        if (nullStr.indexOf("null", idx) == idx)
-            return new Obj((Object) null, 4);
-        else 
-            throw new JSONParseException("invalid null");
+        return new Obj(sb.toString(), idx - start);
     }
 
     /**
-     * @param path a {@code java.nio.file.Path} instance 
+     * @param nullStr A {@code String} such that 
+     * {@code nullStr.charAt(idx) == 'n'}.
+     * @param idx The index from which to start parsing 
+     * {@code null} in {@code nullStr}.
+     * @return A {@code Obj} that describes a {@code null} value.
+     * @throws JSONParseException When the four characters starting
+     * at {@code idx} in {@code nullStr} don't correspond exactly to the 
+     * {@code String} {@code "null"}.
+     */
+    static Obj parseNull(String nullStr, int idx) {
+        if (nullStr.indexOf("null", idx) == idx)
+            return Obj.NULL;
+        else 
+            throw new JSONParseException("Invalid null");
+    }
+
+    /**
+     * @param path A {@code java.nio.file.Path} instance 
      * that corresponds to a JSON file to be parsed.
-     * @return an {@code Obj} representing the parsed JSON file.
-     * @throws CheckedJSONParseException when 
+     * @return A {@code Obj} representing the parsed JSON file.
+     * @throws CheckedJSONParseException When 
      * {@code java.nio.file.Files.readString}
-     * throws an IOException or when {@code parse} 
-     * throws a {@code CheckedJSONParseException}
+     * {@code throws} an {@code IOException} or when {@code parse} 
+     * {@code throws} a {@code CheckedJSONParseException}.
      */
     public static Obj parse(java.nio.file.Path path)
         throws CheckedJSONParseException {

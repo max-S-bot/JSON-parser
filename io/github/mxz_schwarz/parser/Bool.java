@@ -12,11 +12,6 @@ public class Bool extends Obj {
     }
 
     @Override
-    int numChars() {
-        return this == TRUE ? 4 : 5;
-    }
-
-    @Override
     Object val() {
         return this == TRUE;
     }

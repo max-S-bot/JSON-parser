@@ -12,11 +12,6 @@ class Null extends Obj {
     }
 
     @Override
-    int numChars() {
-        return 4;
-    }
-
-    @Override
     Object val() {
         return null;
     }

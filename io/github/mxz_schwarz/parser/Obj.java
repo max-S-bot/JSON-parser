@@ -12,44 +12,41 @@ import java.util.List;
  */
 public abstract class Obj {
 
-    public Number asNum() throws CheckedJSONParseException {
-        throw new CheckedJSONParseException("not a Number");
+    public Number asNum() throws JSONException {
+        throw new JSONException("not a Number");
     }
 
-    public String asStr() throws CheckedJSONParseException {
-        throw new CheckedJSONParseException("not a String");
+    public String asStr() throws JSONException {
+        throw new JSONException("not a String");
     }
 
-    public boolean asBool() throws CheckedJSONParseException {
-        throw new CheckedJSONParseException("not a boolean");
+    public boolean asBool() throws JSONException {
+        throw new JSONException("not a boolean");
     }
 
-    public Object asNull() throws CheckedJSONParseException {
-       throw new CheckedJSONParseException("not null");
+    public Object asNull() throws JSONException {
+       throw new JSONException("not null");
     }
 
-	public Obj[] asArr() throws CheckedJSONParseException {
-        throw new CheckedJSONParseException("not an array");
+	public Obj[] asArr() throws JSONException {
+        throw new JSONException("not an array");
     }
 
-    public List<Obj> asList() throws CheckedJSONParseException {
-        throw new CheckedJSONParseException("not an array");
+    public List<Obj> asList() throws JSONException {
+        throw new JSONException("not an array");
     }
 
-    public Map<String, Obj> asMap() throws CheckedJSONParseException {
-        throw new CheckedJSONParseException("not a Map");
+    public Map<String, Obj> asMap() throws JSONException {
+        throw new JSONException("not a Map");
     }
-
-    abstract int numChars();
 
     abstract Object val();
 
     @Override
     public String toString() {
-        return val().toString();
+        return Objects.toString(val());
     }
 
-    
     public boolean equals(Object o) {
         if (o instanceof Obj obj)
             return Objects.equals(val(), obj.val());

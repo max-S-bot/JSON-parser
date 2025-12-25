@@ -5,11 +5,9 @@ import java.util.List;
 class Arr extends Obj {
 
     private final List<Obj> val;
-    private final int numChars;
 
-    Arr(List<Obj> val, int numChars) {
+    Arr(List<Obj> val) {
         this.val = val;
-        this.numChars = numChars;
     }
 
     @Override
@@ -20,10 +18,6 @@ class Arr extends Obj {
     @Override
     public List<Obj> asList() {
         return val;
-    }
-
-    int numChars() {
-        return numChars;
     }
 
     @Override 

@@ -3,7 +3,6 @@ package io.github.mxz_schwarz.parser;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.math.BigInteger;
 import java.math.BigDecimal;
@@ -18,178 +17,183 @@ public class JSON {
 
     private static final Set<Character> WHITESPACE = Set.of(' ', '\n', '\r', '\t');
     private static final Set<Character> DIGITS = Set.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'); 
-    private static final Set<Character> NAME_START_CHARS = 
-    Set.copyOf(new HashSet<>() {{
-        for (int i=0; i<26; i++) {
-            add((char) ('A'+i));
-            add((char) ('a'+i));
-        }
-    }});
-    private static final Set<Character> NAME_CHARS = 
-    Set.copyOf(new HashSet<>(NAME_START_CHARS) {{
-        addAll(DIGITS);
-        add('_');
-    }});
     private static final Set<Character> INVALID_STR_CHARS = Set.of('\b', '\f', '\n', '\r', '\t');
-
-    private JSON() {}
 
     /**
      * @param jsonStr A {@code String} representing the 
      * JSON data to be parsed.
      * @return A {@code Obj} representing the parsed data.
-     * @throws CheckedJSONParseException When {@code jsonStr}
+     * @throws CheckedJSONException When {@code jsonStr}
      * does not represent valid JSON data.
      */
     public static Obj parse(String jsonStr) 
-        throws CheckedJSONParseException {
-        int idx = skipWS(jsonStr, 0);
+        throws CheckedJSONException {
         try {
-            Obj obj = parseVal(jsonStr, idx);
-            idx += obj.numChars();
-            idx += skipWS(jsonStr, idx);
-            if (idx != jsonStr.length())
-                throw new JSONParseException("Invalid JSON");
-            return obj;
+            return new JSON(jsonStr).obj;
         } catch (JSONParseException jpe) {
-            throw new CheckedJSONParseException(jpe);
+            throw jpe.checked();
         }
     }
 
     /**
-     * @param objStr A {@code String} such that
-     * {@code objStr.charAt(idx) == '{'}.
-     * @param idx The index at which to start 
-     * parsing the object.
-     * @return A {@code Obj} that represents the
-     * parsed object.
-     * @throws JSONParseException
+     * @param path A {@code java.nio.file.Path} instance 
+     * that corresponds to a JSON file to be parsed.
+     * @return A {@code Obj} representing the parsed JSON file.
+     * @throws CheckedJSONException When 
+     * {@code java.nio.file.Files.readString}
+     * {@code throws} an {@code IOException} or when {@code parse} 
+     * {@code throws} a {@code CheckedJSONException}.
      */
-    private static Obj parseObj(String objStr, int idx) {
-        int start = idx++;
-        java.util.Map<String, Obj> obj = new HashMap<>();
-        for (; objStr.charAt(idx) != '}';) {
-            idx += skipWS(objStr, idx);
-            StringBuilder name = new StringBuilder();
-            if (!NAME_START_CHARS.contains(objStr.charAt(idx)))
-                throw new JSONParseException("Invalid name");
-            name.append(objStr.charAt(idx++));
-            while (NAME_CHARS.contains(objStr.charAt(idx)))
-                name.append(objStr.charAt(idx++));
-            idx += skipWS(objStr, idx);
-            if (objStr.charAt(idx++) != ':')
-                throw new JSONParseException("Invalid entry");
-            idx += skipWS(objStr, idx);
-            obj.put(name.toString(), parseVal(objStr, idx));
-            idx = idx + obj.get(name.toString()).numChars();
-            if (objStr.charAt(idx) != ',' && objStr.charAt(idx) != '}')
-                throw new JSONParseException("Invalid object");
+    public static Obj parse(java.nio.file.Path path)
+        throws CheckedJSONException {
+        try {
+            return parse(java.nio.file.Files.readString(path));
+        } catch (java.io.IOException ioe) {
+            throw new CheckedJSONException(ioe);
         }
-        return new Map(obj, idx - start);
+    }
+
+    private final String jsonStr;
+    private final Obj obj;
+    private int idx = 0;
+
+    private JSON(String jsonStr) {
+        this.jsonStr = jsonStr;
+        skipWS();
+        this.obj = parseVal();
+        skipWS();
+        if (idx != jsonStr.length())
+            throw new JSONParseException("Invalid JSON at "+idx);
     }
 
     /**
-     * @param arrStr A {@code String} such that 
-     * {@code arrStr.charAt(idx) == '['}.
-     * @param idx The index at which to start parsing
-     * {@code arrStr}.
-     * @return A {@code Obj} representing the parsed array.
+     * @return A {@code Map} that represents the
+     * parsed object.
+     * @throws JSONParseException when the given object is invalid
+     */
+    private Map parseObj() {
+        java.util.Map<String, Obj> obj = new HashMap<>();
+        skipWS();
+        if (idx >= jsonStr.length())
+            throw new JSONParseException("Invalid object at "+idx);
+        if (jsonStr.charAt(idx) == '}')
+            return new Map(obj);
+        Str name = parseStr();
+        skipWS();
+        if (jsonStr.charAt(idx++) != ':')
+            throw new JSONParseException("Invalid object at "+idx-1);
+        skipWS();
+        obj.put(name.asStr(), parseVal());
+        for (;;) {
+            skipWS();
+            if (idx >= jsonStr.length())
+                throw new JSONParseException("Invalid object at "+idx);
+            if (jsonStr.charAt(idx) == '}')
+                return new Map(obj);
+            if (jsonStr.charAt(idx) != ',')
+                throw new JSONParseException("Invalid object at "+idx);
+            skipWS();
+            if (jsonStr.charAt(idx) != '"')
+                throw new JSONParseException("Invalid object at "+idx);
+            name = parseStr();
+            skipWS();
+            if (jsonStr.charAt(idx) != ':')
+                throw new JSONParseException("Invalid object at "+idx);
+            skipWS();
+            obj.put(name.asStr(), parseVal());
+        }
+    }
+
+    /**
+     * @return A {@code Arr} representing the parsed array.
      * @throws JSONParseException When the array being parsed 
      * isn't a valid JSON array.
      */
-    private static Obj parseArr(String arrStr, int idx) {
-        int start = idx++;
+    private Arr parseArr() {
         List<Obj> arr = new LinkedList<>();
-        for (; arrStr.charAt(idx) != ']';) {
-            idx += skipWS(arrStr, idx);
-            arr.add(parseVal(arrStr, idx));
-            idx += arr.getLast().numChars();
-            idx += skipWS(arrStr, idx);
-            if (idx >= arrStr.length() || 
-            (arrStr.charAt(idx) != ',' && arrStr.charAt(idx) != ']'))
-                throw new JSONParseException("Invalid array");
-        }
-        return new Arr(arr, idx - start);   
+        skipWS();
+        if (idx >= jsonStr.length())
+            throw new JSONParseException("Invalid array at index: "+idx);
+        if (jsonStr.charAt(idx) == ']')
+            return new Arr(arr);
+        arr.add(parseVal());
+        for (;;) {
+            skipWS();
+            if (idx >= jsonStr.length())
+                throw new JSONParseException("Invalid array at index: "+idx);
+            if (jsonStr.charAt(idx) == ']') 
+                return new Arr(arr);  
+            if (jsonStr.charAt(idx) != ',')
+                throw new JSONParseException("Invalid array at index: "+idx);
+            skipWS();
+            arr.add(parseVal());
+        }  
     }   
 
     /**
-     * @param numStr A {@code String} such that
-     * {@code (numStr.charAt(idx) >= '0' && numStr.charAt(idx) <= '9')
-     *  || numStr.charAt(idx) == '-'}.
-     * @param idx The index in {@code numStr} at which the number to
-     * be parsed starts.
-     * @return A {@code Obj} that describes the {@code Number} 
+     * @return A {@code Num} that describes the {@code Number} 
      * that was parsed. If the number is an integer the {@code Number}
      * is a {@code Long} if it can be precisely represented by one, otherwise
      * it is a {@code BigInteger}. If the number is a decimal, it's parsed 
      * as a {@code Double}(again, if it can be precisely represented by one),
      * otherwise it is a {@code BigDecimal}.
-     * @throws JSONParseException When {@code numStr} can't be parsed as a 
+     * @throws JSONParseException When {@code jsonStr} can't be parsed as a 
      * valid number from the specified index.
      */
     // needs to handle scientific notation.
-    private static Obj parseNum(String numStr, int idx) {
+    private Num parseNum() {
         boolean decimal = false;
         StringBuilder num = new StringBuilder();
-        do num.append(numStr.charAt(idx++));
-        while (DIGITS.contains(numStr.charAt(idx)) || 
-        (!decimal && (decimal = numStr.charAt(idx) == '.')));
+        do num.append(jsonStr.charAt(idx++));
+        while (DIGITS.contains(jsonStr.charAt(idx)) || 
+        (!decimal && (decimal = jsonStr.charAt(idx) == '.')));
         if (num.charAt(num.length()-1) == '.' || 
         (num.charAt(0) == 0 && num.length() > 1 && num.charAt(1) != '.'))
-            throw new JSONParseException("Invalid Number");
+            throw new JSONParseException("Invalid Number at "+idx);
         Function<String, Number> primParser = decimal ? Double::parseDouble : Long::parseLong;
         Function<String, Number> bigParser = decimal ? BigDecimal::new : BigInteger::new;
         try {
-            return new Num(primParser.apply(num.toString()), num.length());
+            return new Num(primParser.apply(num.toString()));
         } catch (NumberFormatException nfe) {
-            return new Num(bigParser.apply(num.toString()), num.length());
+            return new Num(bigParser.apply(num.toString()));
         }
     }
 
     /**
-     * @param bool A {@code String} such that 
-     * {@code bool.charAt(idx) == 't' || bool.charAt(idx) == 'f'}.
-     * @param idx The index in {@code bool} at which the 
-     * {@code boolean} to be parsed starts.
-     * @return An {@code Obj} instance that describes the boolean 
+     * @return An {@code Bool} that describes the boolean 
      * that was parsed.
      * @throws JSONParseException When the characters
-     * starting at index {@code idx} in {@code bool} are not an 
+     * starting at index {@code idx} in {@code jsonStr} are not an 
      * exact match to either {@code "true"} or {@code "false"}
      * (the characters following {@code "true"} and {@code "false"}
      * are completely ignored by this method).
      */
-    private static Obj parseBool(String bool, int idx) {
-        int end = bool.indexOf("e", idx);
+    private Bool parseBool() {
+        int end = jsonStr.indexOf("e", idx);
         if (end == -1) 
-            throw new JSONParseException("Invalid boolean");
-        String b = bool.substring(idx, end);
+            throw new JSONParseException("Invalid boolean at "+idx);
+        String b = jsonStr.substring(idx, end);
         if (b.equals("true"))
             return Bool.TRUE;
         else if (b.equals("false"))
             return Bool.FALSE;
-        throw new JSONParseException("Invalid boolean");
+        throw new JSONParseException("Invalid boolean at "+idx);
     }
 
     /**
-     * @param str A {@code String} such that 
-     * {@code str.charAt(idx) == '"'}.
-     * @param idx The index at which to begin 
-     * parsing a {@code String} from {@code str}.
      * @return A {@code Obj} that describes the {@code String}
-     * that was parsed.
-     * @throws JSONParseException When the end of {@code str}
-     * is reached before an unescaped quote, {@code str}
+     * that was parsed. Ignores characters following the end quote.
+     * @throws JSONParseException When the end of {@code jsonStr}
+     * is reached before an unescaped quote, {@code jsonStr}
      * contains a character that should have been escaped but wasn't, 
      * or a back slash isn't followed by a valid sequence of characters
      * that can be escaped.
      */
-    private static Obj parseStr(String str, int idx) {
+    private Str parseStr() {
         StringBuilder sb = new StringBuilder();
-        int start = idx;
-        for (; str.charAt(++idx) != '"';) {
-            if (str.charAt(idx) == '\\')
-                sb.append(switch (str.charAt(++idx)) {
+        for (; jsonStr.charAt(++idx) != '"';) {
+            if (jsonStr.charAt(idx) == '\\')
+                sb.append(switch (jsonStr.charAt(++idx)) {
                     case '"' -> '"';
                     case '\\' -> '\\';
                     case '/' -> '/';
@@ -199,70 +203,56 @@ public class JSON {
                     case 'r' -> '\r';
                     case 't' -> '\t';
                     case 'u' -> (char) ('\u0000' + // this needs more error handling
-                    Integer.parseInt(str.substring(idx, idx+=4), 16)); 
-                    default -> throw new JSONParseException("Invalid escape sequence");
+                    Integer.parseInt(jsonStr.substring(idx, idx+=4), 16)); 
+                    default -> throw new JSONParseException("Invalid escape sequence at "+idx);
                 });
-            else if (INVALID_STR_CHARS.contains(str.charAt(idx)))
-                throw new JSONParseException("Invalid literal character");
-            else if (idx == str.length()-1)
-                throw new JSONParseException("Invalid String");
+            else if (INVALID_STR_CHARS.contains(jsonStr.charAt(idx)))
+                throw new JSONParseException("Invalid literal character at "+idx);
+            else if (idx == jsonStr.length()-1)
+                throw new JSONParseException("Invalid String at "+idx);
             else
-                sb.append(str.charAt(idx));
+                sb.append(jsonStr.charAt(idx));
         }
-        return new Str(sb.toString(), idx - start);
+        return new Str(sb.toString());
     }
 
     /**
-     * @param nullStr A {@code String} such that 
-     * {@code nullStr.charAt(idx) == 'n'}.
-     * @param idx The index from which to start parsing 
-     * {@code null} in {@code nullStr}.
      * @return A {@code Obj} that describes a {@code null} value.
+     * Ignores the characters after {@code "null"}.
      * @throws JSONParseException When the four characters starting
-     * at {@code idx} in {@code nullStr} don't correspond exactly to the 
+     * at {@code idx} in {@code jsonStr} don't correspond exactly to the 
      * {@code String} {@code "null"}.
      */
-    private static Obj parseNull(String nullStr, int idx) {
-        if (nullStr.indexOf("null", idx) == idx)
+    private Null parseNull() {
+        if (jsonStr.indexOf("null", idx) == idx)
             return Null.NULL;
         else 
-            throw new JSONParseException("Invalid null");
+            throw new JSONParseException("Invalid null at "+idx);
     }
 
-    private static Obj parseVal(String jsonStr, int idx) {
+    /**
+     * @return An {@code Obj} representing the JSON value 
+     * that was parsed.
+     * @throws JSONParseException When the {@code jsonStr.charAt(idx)}
+     * does not correspond to the start character of a JSON value.
+     */
+    private Obj parseVal() {
         return switch (jsonStr.charAt(idx)) {
-            case 't', 'f' -> parseBool(jsonStr, idx);
-            case 'n' -> parseNull(jsonStr, idx);
+            case 't', 'f' -> parseBool();
+            case 'n' -> parseNull();
             case '-','0','1','2','3','4','5','6','7','8','9'
-                -> parseNum(jsonStr, idx);
-            case '"' -> parseStr(jsonStr, idx);
-            case '[' -> parseArr(jsonStr, idx);
-            case '{' -> parseObj(jsonStr, idx);
-            default -> throw new JSONParseException("Invalid value");
+                -> parseNum();
+            case '"' -> parseStr();
+            case '[' -> parseArr();
+            case '{' -> parseObj();
+            default -> throw new JSONParseException("Invalid value at index: "+idx);
         };
     }
 
-    private static int skipWS(String str, int idx) {
-        int n = 0;
-        while(WHITESPACE.contains(str.charAt(idx+n++)));
-        return n-1;
-    }
-
-    /**
-     * @param path A {@code java.nio.file.Path} instance 
-     * that corresponds to a JSON file to be parsed.
-     * @return A {@code Obj} representing the parsed JSON file.
-     * @throws CheckedJSONParseException When 
-     * {@code java.nio.file.Files.readString}
-     * {@code throws} an {@code IOException} or when {@code parse} 
-     * {@code throws} a {@code CheckedJSONParseException}.
-     */
-    public static Obj parse(java.nio.file.Path path)
-        throws CheckedJSONParseException {
-        try {
-            return parse(java.nio.file.Files.readString(path));
-        } catch (java.io.IOException ioe) {
-            throw new CheckedJSONParseException(ioe);
-        }
+    private void skipWS() {
+        while(idx < jsonStr.length())
+            if (WHITESPACE.contains(jsonStr.charAt(idx)))
+                idx++;
+            else break;
     }
 }

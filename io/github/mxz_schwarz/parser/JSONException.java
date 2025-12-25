@@ -34,7 +34,7 @@ public class JSONException extends Exception {
      * @param jre A {@code JSONRuntimeException} which is 
      * the cause of {@code this}.
      */
-    JSONException(JSONParseException jre) {
+    JSONException(JSONRuntimeException jre) {
         super(jre);
     }
 

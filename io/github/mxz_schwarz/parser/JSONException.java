@@ -4,21 +4,21 @@ package io.github.mxz_schwarz.parser;
  * @see io.github.mxz_schwarz.parser.JSONParseException
  * @author max-S-bot
  */
-public class CheckedJSONParseException extends Exception {
+public class JSONException extends Exception {
 
     /**
      * @param ioe A {@code java.io.IOException} which is 
      * the cause of {@code this}.
      */
-    CheckedJSONParseException(java.io.IOException ioe) {
+    JSONException(java.io.IOException ioe) {
         super(ioe);
     }
 
     /**
      * @param message A {@code String} explaining {@code this}
-     * {@code CheckedJSONParseException}.
+     * {@code JSONException}.
      */
-    CheckedJSONParseException(String message) {
+    JSONException(String message) {
         super(message);
     }
 
@@ -26,15 +26,23 @@ public class CheckedJSONParseException extends Exception {
      * @param jpe A {@code JSONParseException} which is 
      * the cause of {@code this}.
      */
-    CheckedJSONParseException(JSONParseException jpe) {
+    JSONException(JSONParseException jpe) {
         super(jpe);
+    }
+
+    /**
+     * @param jre A {@code JSONRuntimeException} which is 
+     * the cause of {@code this}.
+     */
+    JSONException(JSONParseException jre) {
+        super(jre);
     }
 
     /**
      * @return A new {@code JSONParseException} 
      * whose cause is {@code this}
      */
-    public JSONParseException unchecked() {
-        return new JSONParseException(this);
+    public JSONRuntimeException unchecked() {
+        return new JSONRuntimeException(this);
     }
 }

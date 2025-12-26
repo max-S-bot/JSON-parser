@@ -2,7 +2,7 @@ package io.github.mxz_schwarz.parser;
 
 /**
  * A checked {@link Exception} that can be conveniently chained into an
- * unchecked{@link JSONRuntimeException} via {@link JSONException#unchecked()}
+ * unchecked {@link JSONRuntimeException} via {@link JSONException#unchecked()}
  * and back into a checked {@link JSONException} with 
  * {@link JSONRuntimeException#checked()}. Instances of {@link JSONException} 
  * should be thrown by {@code public} or {@code protected} executables. Instances

@@ -9,34 +9,34 @@ import java.math.BigDecimal;
 import java.util.function.Function;
 
 /**
- * {@code class} that does most of the parsing 
- * legwork via the public overloaded {@code JSON.parse} methods.
+ * {@code class} that does most of the parsing legwork via the {@code public} 
+ * {@link JSON#parse(String)} and {@link JSON#parse(java.nio.file.Path)} methods.
  * @author max-S-bot
  */
 public class JSON {
 
     /**
-     * {@code Set} of whitespace characters that 
+     * {@link Set} of whitespace characters that 
      * are ignored between JSON tokens.
      */
     private static final Set<Character> WHITESPACE = Set.of(' ', '\n', '\r', '\t');
 
     /**
-     * {@code Set} of digits. 
+     * {@link Set} of digits. 
      */
     private static final Set<Character> DIGITS = Set.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
     
     /**
-     * A {@code Set} of the literal {@code char}s that 
+     * A {@link Set} of the literal {@code char}s that 
      * are not permitted in a JSON string.  
      */
     private static final Set<Character> INVALID_STR_CHARS = Set.of('\b', '\f', '\n', '\r', '\t');
 
     /**
-     * @param jsonStr A {@code String} representing the 
+     * @param jsonStr A {@link String} representing the 
      * JSON data to be parsed.
-     * @return A {@code Obj} representing the parsed data.
-     * @throws JSONException When {@code jsonStr}
+     * @return A {@link Obj} representing the parsed data.
+     * @throws JSONException When {@link #jsonStr}
      * does not represent valid JSON data.
      */
     public static Obj parse(String jsonStr) 
@@ -49,13 +49,12 @@ public class JSON {
     }
 
     /**
-     * @param path A {@code java.nio.file.Path} instance 
+     * @param path A {@link java.nio.file.Path} instance 
      * that corresponds to a JSON file to be parsed.
-     * @return A {@code Obj} representing the parsed JSON file.
-     * @throws JSONException When 
-     * {@code java.nio.file.Files.readString}
-     * {@code throws} an {@code IOException} or when {@code parse} 
-     * {@code throws} a {@code JSONException}.
+     * @return A {@link Obj} representing the parsed JSON file.
+     * @throws JSONException When {@link java.nio.file.Files#readString}
+     * {@code throws} an {@link java.io.IOException} or when {@link parse} 
+     * {@code throws} a {@link JSONException}.
      */
     public static Obj parse(java.nio.file.Path path)
         throws JSONException {
@@ -67,12 +66,12 @@ public class JSON {
     }
 
     /**
-     * The {@code String} representing the JSON 
+     * The {@link String} representing the JSON 
      * data to parse.
      */
     private final String jsonStr;
     /**
-     * The {@code Obj} representing 
+     * The {@link Obj} representing 
      * the parsed JSON data.
      */
     private final Obj obj;
@@ -82,9 +81,9 @@ public class JSON {
      */
     private int idx = 0;
     /**
-     * @param jsonStr The {@code String}
+     * @param jsonStr The {@link String}
      * representing the JSON data that 
-     * this {@code JSON} instance will parse.
+     * this {@link JSON} instance will parse.
      */
     private JSON(String jsonStr) {
         this.jsonStr = jsonStr;
@@ -96,7 +95,7 @@ public class JSON {
     }
 
     /**
-     * @return A {@code Map} that represents the
+     * @return A {@link Map} that represents the
      * parsed object.
      * @throws JSONParseException when the given object is invalid
      */
@@ -138,7 +137,7 @@ public class JSON {
     }
 
     /**
-     * @return A {@code Arr} representing the parsed array.
+     * @return A {@link Arr} representing the parsed array.
      * @throws JSONParseException When the array being parsed 
      * isn't a valid JSON array.
      */
@@ -166,13 +165,13 @@ public class JSON {
     }   
 
     /**
-     * @return A {@code Num} that describes the {@code Number} 
-     * that was parsed. If the number is an integer the {@code Number}
-     * is a {@code Long} if it can be precisely represented by one, otherwise
-     * it is a {@code BigInteger}. If the number is a decimal, it's parsed 
-     * as a {@code Double}(again, if it can be precisely represented by one),
-     * otherwise it is a {@code BigDecimal}.
-     * @throws JSONParseException When {@code jsonStr} can't be parsed as a 
+     * @return A {@link Num} that describes the {@link Number} 
+     * that was parsed. If the number is an integer the {@link Number}
+     * is a {@link Long} if it can be precisely represented by one, otherwise
+     * it is a {@link BigInteger}. If the number is a decimal, it's parsed 
+     * as a {@link Double} (again, if it can be precisely represented by one),
+     * otherwise it is a {@link BigDecimal}.
+     * @throws JSONParseException When {@link #jsonStr} can't be parsed as a 
      * valid number from the specified index.
      */
     // needs to handle scientific notation.
@@ -197,10 +196,10 @@ public class JSON {
     }
 
     /**
-     * @return An {@code Bool} that describes the boolean 
+     * @return An {@link Bool} that describes the boolean 
      * that was parsed.
      * @throws JSONParseException When the characters
-     * starting at index {@code idx} in {@code jsonStr} are not an 
+     * starting at index {@link #idx} in {@link #jsonStr} are not an 
      * exact match to either {@code "true"} or {@code "false"}
      * (the characters following {@code "true"} and {@code "false"}
      * are completely ignored by this method).
@@ -222,10 +221,10 @@ public class JSON {
     }
 
     /**
-     * @return A {@code Obj} that describes the {@code String}
+     * @return A {@link Obj} that describes the {@link String}
      * that was parsed. Ignores characters following the end quote.
-     * @throws JSONParseException When the end of {@code jsonStr}
-     * is reached before an unescaped quote, {@code jsonStr}
+     * @throws JSONParseException When the end of {@link #jsonStr}
+     * is reached before an unescaped quote, {@link #jsonStr}
      * contains a character that should have been escaped but wasn't, 
      * or a back slash isn't followed by a valid sequence of characters
      * that can be escaped.
@@ -267,11 +266,11 @@ public class JSON {
     }
 
     /**
-     * @return A {@code Obj} that describes a {@code null} value.
+     * @return A {@link Obj} that describes a {@code null} value.
      * Ignores the characters after {@code "null"}.
      * @throws JSONParseException When the four characters starting
-     * at {@code idx} in {@code jsonStr} don't correspond exactly to the 
-     * {@code String} {@code "null"}.
+     * at {@link #idx} in {@link #jsonStr} don't correspond exactly to the 
+     * {@link String} {@code "null"}.
      */
     private Null parseNull() {
         if (jsonStr.charAt(idx) != 'n')
@@ -283,7 +282,7 @@ public class JSON {
     }
 
     /**
-     * @return An {@code Obj} representing the JSON value 
+     * @return An {@link Obj} representing the JSON value 
      * that was parsed.
      * @throws JSONParseException When the {@code jsonStr.charAt(idx)}
      * does not correspond to the start character of a JSON value.
@@ -304,8 +303,8 @@ public class JSON {
     }
 
     /**
-     * Increments {@code idx} until either {@code jsonStr.charAt(idx)}
-     * isn't a member of {@code WHITESPACE} or {@code idx == jsonStr.length()}.
+     * Increments {@link #idx} until either {@code jsonStr.charAt(idx)}
+     * isn't a member of {@link #WHITESPACE} or {@code idx == jsonStr.length()}.
      */
     private void skipWS() {
         while(idx < jsonStr.length())

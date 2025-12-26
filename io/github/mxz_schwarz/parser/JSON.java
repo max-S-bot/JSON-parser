@@ -23,15 +23,15 @@ public class JSON {
      * @param jsonStr A {@code String} representing the 
      * JSON data to be parsed.
      * @return A {@code Obj} representing the parsed data.
-     * @throws CheckedJSONException When {@code jsonStr}
+     * @throws JSONException When {@code jsonStr}
      * does not represent valid JSON data.
      */
     public static Obj parse(String jsonStr) 
-        throws CheckedJSONException {
+        throws JSONException {
         try {
             return new JSON(jsonStr).obj;
         } catch (JSONParseException jpe) {
-            throw jpe.checked();
+            throw new JSONException(jpe);
         }
     }
 
@@ -39,17 +39,17 @@ public class JSON {
      * @param path A {@code java.nio.file.Path} instance 
      * that corresponds to a JSON file to be parsed.
      * @return A {@code Obj} representing the parsed JSON file.
-     * @throws CheckedJSONException When 
+     * @throws JSONException When 
      * {@code java.nio.file.Files.readString}
      * {@code throws} an {@code IOException} or when {@code parse} 
-     * {@code throws} a {@code CheckedJSONException}.
+     * {@code throws} a {@code JSONException}.
      */
     public static Obj parse(java.nio.file.Path path)
-        throws CheckedJSONException {
+        throws JSONException {
         try {
             return parse(java.nio.file.Files.readString(path));
         } catch (java.io.IOException ioe) {
-            throw new CheckedJSONException(ioe);
+            throw new JSONException(ioe);
         }
     }
 
@@ -72,6 +72,8 @@ public class JSON {
      * @throws JSONParseException when the given object is invalid
      */
     private Map parseObj() {
+        if (jsonStr.charAt(idx) != '{')
+            throw new JSONParseException("Precondition violated");
         java.util.Map<String, Obj> obj = new HashMap<>();
         skipWS();
         if (idx >= jsonStr.length())
@@ -81,7 +83,7 @@ public class JSON {
         Str name = parseStr();
         skipWS();
         if (jsonStr.charAt(idx++) != ':')
-            throw new JSONParseException("Invalid object at "+idx-1);
+            throw new JSONParseException("Invalid object at "+(idx-1));
         skipWS();
         obj.put(name.asStr(), parseVal());
         for (;;) {
@@ -110,6 +112,8 @@ public class JSON {
      * isn't a valid JSON array.
      */
     private Arr parseArr() {
+        if (jsonStr.charAt(idx) != '[')
+            throw new JSONParseException("Precondition violated");
         List<Obj> arr = new LinkedList<>();
         skipWS();
         if (idx >= jsonStr.length())
@@ -142,6 +146,8 @@ public class JSON {
      */
     // needs to handle scientific notation.
     private Num parseNum() {
+        if (!DIGITS.contains(jsonStr.charAt(idx)) && jsonStr.charAt(idx) != '-')
+            throw new JSONParseException("Precondition violated");
         boolean decimal = false;
         StringBuilder num = new StringBuilder();
         do num.append(jsonStr.charAt(idx++));
@@ -169,6 +175,8 @@ public class JSON {
      * are completely ignored by this method).
      */
     private Bool parseBool() {
+        if (jsonStr.charAt(idx) != 't' && jsonStr.charAt(idx) != 'f')
+            throw new JSONParseException("Precondition violated");
         int end = jsonStr.indexOf("e", idx);
         if (end == -1) 
             throw new JSONParseException("Invalid boolean at "+idx);
@@ -190,6 +198,8 @@ public class JSON {
      * that can be escaped.
      */
     private Str parseStr() {
+        if (jsonStr.charAt(idx) != '"')
+            throw new JSONParseException("Precondition violated");
         StringBuilder sb = new StringBuilder();
         for (; jsonStr.charAt(++idx) != '"';) {
             if (jsonStr.charAt(idx) == '\\')
@@ -224,6 +234,8 @@ public class JSON {
      * {@code String} {@code "null"}.
      */
     private Null parseNull() {
+        if (jsonStr.charAt(idx) != 'n')
+            throw new JSONParseException("Precondition violated");
         if (jsonStr.indexOf("null", idx) == idx)
             return Null.NULL;
         else 

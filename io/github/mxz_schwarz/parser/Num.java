@@ -1,6 +1,6 @@
 package io.github.mxz_schwarz.parser;
 
-class Num extends Obj {
+public class Num extends Obj {
 
     private final Number val;
 

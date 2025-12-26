@@ -2,7 +2,7 @@ package io.github.mxz_schwarz.parser;
 
 import java.util.List;
 
-class Arr extends Obj {
+public class Arr extends Obj {
 
     private final List<Obj> val;
 

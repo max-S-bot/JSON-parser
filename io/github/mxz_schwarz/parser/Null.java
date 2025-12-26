@@ -1,6 +1,6 @@
 package io.github.mxz_schwarz.parser;
 
-class Null extends Obj {
+public class Null extends Obj {
     
     static final Null NULL = new Null();
 

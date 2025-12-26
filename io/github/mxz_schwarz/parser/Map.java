@@ -1,6 +1,6 @@
 package io.github.mxz_schwarz.parser;
 
-class Map extends Obj {
+public class Map extends Obj {
 
     private final java.util.Map<String, Obj> val;
 

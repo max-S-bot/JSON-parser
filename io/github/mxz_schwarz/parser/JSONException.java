@@ -10,8 +10,9 @@ public class JSONException extends Exception {
      * @param ioe A {@code java.io.IOException} which is 
      * the cause of {@code this}.
      */
-    JSONException(java.io.IOException ioe) {
-        super(ioe);
+    JSONException(java.io.IOException ioe, String message) {
+        super(message);
+        addSuppressed(ioe);
     }
 
     /**

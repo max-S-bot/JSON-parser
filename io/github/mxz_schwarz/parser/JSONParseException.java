@@ -9,4 +9,9 @@ class JSONParseException extends RuntimeException {
     JSONParseException(String message) {
         super(message);
     }
+
+    JSONParseException(NumberFormatException nfe, String message) {
+        super(message);
+        addSuppressed(nfe);
+    }
 }

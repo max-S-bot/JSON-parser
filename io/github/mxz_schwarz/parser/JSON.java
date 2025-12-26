@@ -15,8 +15,22 @@ import java.util.function.Function;
  */
 public class JSON {
 
+
+    /**
+     * {@code Set} of whitespace characters that 
+     * are ignored between JSON tokens.
+     */
     private static final Set<Character> WHITESPACE = Set.of(' ', '\n', '\r', '\t');
-    private static final Set<Character> DIGITS = Set.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'); 
+
+    /**
+     * {@code Set} of digits. 
+     */
+    private static final Set<Character> DIGITS = Set.of('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+    
+    /**
+     * A {@code Set} of the literal {@code char}s that 
+     * are not permitted in a JSON string.  
+     */
     private static final Set<Character> INVALID_STR_CHARS = Set.of('\b', '\f', '\n', '\r', '\t');
 
     /**
@@ -49,14 +63,30 @@ public class JSON {
         try {
             return parse(java.nio.file.Files.readString(path));
         } catch (java.io.IOException ioe) {
-            throw new JSONException(ioe);
+            throw new JSONException(ioe, "IO exception");
         }
     }
 
+    /**
+     * The {@code String} representing the JSON 
+     * data to parse.
+     */
     private final String jsonStr;
+    /**
+     * The {@code Obj} representing 
+     * the parsed JSON data.
+     */
     private final Obj obj;
+    /**
+     * The {@code} current position
+     * in the JSON data being parsed.
+     */
     private int idx = 0;
-
+    /**
+     * @param jsonStr The {@code String}
+     * representing the JSON data that 
+     * this {@code JSON} instance will parse.
+     */
     private JSON(String jsonStr) {
         this.jsonStr = jsonStr;
         skipWS();
@@ -72,35 +102,37 @@ public class JSON {
      * @throws JSONParseException when the given object is invalid
      */
     private Map parseObj() {
-        if (jsonStr.charAt(idx) != '{')
-            throw new JSONParseException("Precondition violated");
+        if (jsonStr.charAt(idx++) != '{')
+            throw new JSONParseException("Precondition violated at "+ (idx-1));
         java.util.Map<String, Obj> obj = new HashMap<>();
         skipWS();
         if (idx >= jsonStr.length())
-            throw new JSONParseException("Invalid object at "+idx);
+            throw new JSONParseException("Unexpected end of JSON at "+idx);
         if (jsonStr.charAt(idx) == '}')
             return new Map(obj);
+        if (jsonStr.charAt(idx) != '"')
+            throw new JSONParseException("Expected identifier at "+idx);
         Str name = parseStr();
         skipWS();
         if (jsonStr.charAt(idx++) != ':')
-            throw new JSONParseException("Invalid object at "+(idx-1));
+            throw new JSONParseException("Expexted entry at "+(idx-1));
         skipWS();
         obj.put(name.asStr(), parseVal());
         for (;;) {
             skipWS();
             if (idx >= jsonStr.length())
-                throw new JSONParseException("Invalid object at "+idx);
+                throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == '}')
                 return new Map(obj);
             if (jsonStr.charAt(idx) != ',')
-                throw new JSONParseException("Invalid object at "+idx);
+                throw new JSONParseException("Expected entry delimiter at "+idx);
             skipWS();
             if (jsonStr.charAt(idx) != '"')
-                throw new JSONParseException("Invalid object at "+idx);
+                throw new JSONParseException("Expected identifier at "+idx);
             name = parseStr();
             skipWS();
             if (jsonStr.charAt(idx) != ':')
-                throw new JSONParseException("Invalid object at "+idx);
+                throw new JSONParseException("Expected entry at "+idx);
             skipWS();
             obj.put(name.asStr(), parseVal());
         }
@@ -112,23 +144,23 @@ public class JSON {
      * isn't a valid JSON array.
      */
     private Arr parseArr() {
-        if (jsonStr.charAt(idx) != '[')
-            throw new JSONParseException("Precondition violated");
+        if (jsonStr.charAt(idx++) != '[')
+            throw new JSONParseException("Precondition violated at "+idx);
         List<Obj> arr = new LinkedList<>();
         skipWS();
         if (idx >= jsonStr.length())
-            throw new JSONParseException("Invalid array at index: "+idx);
+            throw new JSONParseException("Unexpected end of JSON at"+idx);
         if (jsonStr.charAt(idx) == ']')
             return new Arr(arr);
         arr.add(parseVal());
         for (;;) {
             skipWS();
             if (idx >= jsonStr.length())
-                throw new JSONParseException("Invalid array at index: "+idx);
+                throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == ']') 
                 return new Arr(arr);  
             if (jsonStr.charAt(idx) != ',')
-                throw new JSONParseException("Invalid array at index: "+idx);
+                throw new JSONParseException("Expected element delimiter at "+idx);
             skipWS();
             arr.add(parseVal());
         }  
@@ -147,7 +179,7 @@ public class JSON {
     // needs to handle scientific notation.
     private Num parseNum() {
         if (!DIGITS.contains(jsonStr.charAt(idx)) && jsonStr.charAt(idx) != '-')
-            throw new JSONParseException("Precondition violated");
+            throw new JSONParseException("Precondition violated at "+idx);
         boolean decimal = false;
         StringBuilder num = new StringBuilder();
         do num.append(jsonStr.charAt(idx++));
@@ -155,7 +187,7 @@ public class JSON {
         (!decimal && (decimal = jsonStr.charAt(idx) == '.')));
         if (num.charAt(num.length()-1) == '.' || 
         (num.charAt(0) == 0 && num.length() > 1 && num.charAt(1) != '.'))
-            throw new JSONParseException("Invalid Number at "+idx);
+            throw new JSONParseException("Unexpected character in number at "+idx);
         Function<String, Number> primParser = decimal ? Double::parseDouble : Long::parseLong;
         Function<String, Number> bigParser = decimal ? BigDecimal::new : BigInteger::new;
         try {
@@ -176,16 +208,16 @@ public class JSON {
      */
     private Bool parseBool() {
         if (jsonStr.charAt(idx) != 't' && jsonStr.charAt(idx) != 'f')
-            throw new JSONParseException("Precondition violated");
+            throw new JSONParseException("Precondition violated at "+idx);
         int end = jsonStr.indexOf("e", idx);
         if (end == -1) 
-            throw new JSONParseException("Invalid boolean at "+idx);
+            throw new JSONParseException("Expected boolean at "+idx);
         String b = jsonStr.substring(idx, end);
         if (b.equals("true"))
             return Bool.TRUE;
         else if (b.equals("false"))
             return Bool.FALSE;
-        throw new JSONParseException("Invalid boolean at "+idx);
+        throw new JSONParseException("Expected boolean at "+idx);
     }
 
     /**
@@ -199,9 +231,9 @@ public class JSON {
      */
     private Str parseStr() {
         if (jsonStr.charAt(idx) != '"')
-            throw new JSONParseException("Precondition violated");
+            throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder sb = new StringBuilder();
-        for (; jsonStr.charAt(++idx) != '"';) {
+        for (; jsonStr.charAt(++idx) != '"';)
             if (jsonStr.charAt(idx) == '\\')
                 sb.append(switch (jsonStr.charAt(++idx)) {
                     case '"' -> '"';
@@ -212,17 +244,22 @@ public class JSON {
                     case 'n' -> '\n';
                     case 'r' -> '\r';
                     case 't' -> '\t';
-                    case 'u' -> (char) ('\u0000' + // this needs more error handling
-                    Integer.parseInt(jsonStr.substring(idx, idx+=4), 16)); 
-                    default -> throw new JSONParseException("Invalid escape sequence at "+idx);
+                    case 'u' -> {
+                        try {
+                            yield (char) ('\u0000' + 
+                            Integer.parseInt(jsonStr.substring(idx, idx+=4), 16));
+                        } catch (NumberFormatException nfe){
+                            throw new JSONParseException(nfe, "Expected escape sequence at "+idx);
+                        }
+                    }
+                    default -> throw new JSONParseException("Expected escape sequence at "+idx);
                 });
             else if (INVALID_STR_CHARS.contains(jsonStr.charAt(idx)))
-                throw new JSONParseException("Invalid literal character at "+idx);
+                throw new JSONParseException("Unexpected literal character at "+idx);
             else if (idx == jsonStr.length()-1)
-                throw new JSONParseException("Invalid String at "+idx);
+                throw new JSONParseException("Unexpected end of JSON at "+idx);
             else
                 sb.append(jsonStr.charAt(idx));
-        }
         return new Str(sb.toString());
     }
 
@@ -235,11 +272,11 @@ public class JSON {
      */
     private Null parseNull() {
         if (jsonStr.charAt(idx) != 'n')
-            throw new JSONParseException("Precondition violated");
+            throw new JSONParseException("Precondition violated at "+idx);
         if (jsonStr.indexOf("null", idx) == idx)
             return Null.NULL;
         else 
-            throw new JSONParseException("Invalid null at "+idx);
+            throw new JSONParseException("Expected null at "+idx);
     }
 
     /**
@@ -257,10 +294,15 @@ public class JSON {
             case '"' -> parseStr();
             case '[' -> parseArr();
             case '{' -> parseObj();
-            default -> throw new JSONParseException("Invalid value at index: "+idx);
+            default -> throw new JSONParseException("Expected value at "+idx);
         };
     }
 
+    /**
+     * Increments {@code idx} until either {@code jsonStr.charAt(idx)}
+     * isn't a member of {@code WHITESPACE} or {@code idx} is the last 
+     * index of {@code jsonStr}.
+     */
     private void skipWS() {
         while(idx < jsonStr.length())
             if (WHITESPACE.contains(jsonStr.charAt(idx)))

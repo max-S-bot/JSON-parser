@@ -15,7 +15,6 @@ import java.util.function.Function;
  */
 public class JSON {
 
-
     /**
      * {@code Set} of whitespace characters that 
      * are ignored between JSON tokens.
@@ -78,7 +77,7 @@ public class JSON {
      */
     private final Obj obj;
     /**
-     * The {@code} current position
+     * The current position
      * in the JSON data being parsed.
      */
     private int idx = 0;
@@ -106,7 +105,7 @@ public class JSON {
             throw new JSONParseException("Precondition violated at "+ (idx-1));
         java.util.Map<String, Obj> obj = new HashMap<>();
         skipWS();
-        if (idx >= jsonStr.length())
+        if (idx == jsonStr.length())
             throw new JSONParseException("Unexpected end of JSON at "+idx);
         if (jsonStr.charAt(idx) == '}')
             return new Map(obj);
@@ -120,7 +119,7 @@ public class JSON {
         obj.put(name.asStr(), parseVal());
         for (;;) {
             skipWS();
-            if (idx >= jsonStr.length())
+            if (idx == jsonStr.length())
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == '}')
                 return new Map(obj);
@@ -145,17 +144,17 @@ public class JSON {
      */
     private Arr parseArr() {
         if (jsonStr.charAt(idx++) != '[')
-            throw new JSONParseException("Precondition violated at "+idx);
+            throw new JSONParseException("Precondition violated at "+(idx-1));
         List<Obj> arr = new LinkedList<>();
         skipWS();
-        if (idx >= jsonStr.length())
+        if (idx == jsonStr.length())
             throw new JSONParseException("Unexpected end of JSON at"+idx);
         if (jsonStr.charAt(idx) == ']')
             return new Arr(arr);
         arr.add(parseVal());
         for (;;) {
             skipWS();
-            if (idx >= jsonStr.length())
+            if (idx == jsonStr.length())
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == ']') 
                 return new Arr(arr);  
@@ -209,13 +208,15 @@ public class JSON {
     private Bool parseBool() {
         if (jsonStr.charAt(idx) != 't' && jsonStr.charAt(idx) != 'f')
             throw new JSONParseException("Precondition violated at "+idx);
-        int end = jsonStr.indexOf("e", idx);
-        if (end == -1) 
-            throw new JSONParseException("Expected boolean at "+idx);
-        String b = jsonStr.substring(idx, end);
-        if (b.equals("true"))
+        StringBuilder bool = new StringBuilder();
+        while (jsonStr.charAt(idx) != 'e')
+            if (idx < jsonStr.length())
+                bool.append(jsonStr.charAt(idx++));
+            else 
+                throw new JSONParseException("Expected boolean at "+idx);
+        if (bool.toString().equals("tru"))
             return Bool.TRUE;
-        else if (b.equals("false"))
+        else if (bool.toString().equals("fals"))
             return Bool.FALSE;
         throw new JSONParseException("Expected boolean at "+idx);
     }
@@ -233,8 +234,10 @@ public class JSON {
         if (jsonStr.charAt(idx) != '"')
             throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder sb = new StringBuilder();
-        for (; jsonStr.charAt(++idx) != '"';)
-            if (jsonStr.charAt(idx) == '\\')
+        for (idx++; ;idx++)
+            if (idx == jsonStr.length())
+                throw new JSONParseException("Unexpected end of JSON at "+idx);
+            else if (jsonStr.charAt(idx) == '\\')
                 sb.append(switch (jsonStr.charAt(++idx)) {
                     case '"' -> '"';
                     case '\\' -> '\\';
@@ -248,7 +251,7 @@ public class JSON {
                         try {
                             yield (char) ('\u0000' + 
                             Integer.parseInt(jsonStr.substring(idx, idx+=4), 16));
-                        } catch (NumberFormatException nfe){
+                        } catch (NumberFormatException nfe) {
                             throw new JSONParseException(nfe, "Expected escape sequence at "+idx);
                         }
                     }
@@ -256,8 +259,8 @@ public class JSON {
                 });
             else if (INVALID_STR_CHARS.contains(jsonStr.charAt(idx)))
                 throw new JSONParseException("Unexpected literal character at "+idx);
-            else if (idx == jsonStr.length()-1)
-                throw new JSONParseException("Unexpected end of JSON at "+idx);
+            else if (jsonStr.charAt(idx) == '"')
+                break;
             else
                 sb.append(jsonStr.charAt(idx));
         return new Str(sb.toString());
@@ -273,7 +276,7 @@ public class JSON {
     private Null parseNull() {
         if (jsonStr.charAt(idx) != 'n')
             throw new JSONParseException("Precondition violated at "+idx);
-        if (jsonStr.indexOf("null", idx) == idx)
+        if (jsonStr.indexOf("null", idx)+3 == (idx+=3))
             return Null.NULL;
         else 
             throw new JSONParseException("Expected null at "+idx);
@@ -286,7 +289,7 @@ public class JSON {
      * does not correspond to the start character of a JSON value.
      */
     private Obj parseVal() {
-        return switch (jsonStr.charAt(idx)) {
+        Obj val = switch (jsonStr.charAt(idx)) {
             case 't', 'f' -> parseBool();
             case 'n' -> parseNull();
             case '-','0','1','2','3','4','5','6','7','8','9'
@@ -296,12 +299,13 @@ public class JSON {
             case '{' -> parseObj();
             default -> throw new JSONParseException("Expected value at "+idx);
         };
+        idx++;
+        return val;
     }
 
     /**
      * Increments {@code idx} until either {@code jsonStr.charAt(idx)}
-     * isn't a member of {@code WHITESPACE} or {@code idx} is the last 
-     * index of {@code jsonStr}.
+     * isn't a member of {@code WHITESPACE} or {@code idx == jsonStr.length()}.
      */
     private void skipWS() {
         while(idx < jsonStr.length())

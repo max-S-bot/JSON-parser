@@ -7,7 +7,7 @@ class Arr extends Obj {
     private final List<Obj> val;
 
     Arr(List<Obj> val) {
-        this.val = val;
+        this.val = List.copyOf(val);
     }
 
     @Override

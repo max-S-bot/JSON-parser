@@ -5,7 +5,7 @@ class Map extends Obj {
     private final java.util.Map<String, Obj> val;
 
     Map(java.util.Map<String, Obj> val) {
-        this.val = val;
+        this.val = java.util.Map.copyOf(val);
     }
 
     @Override 

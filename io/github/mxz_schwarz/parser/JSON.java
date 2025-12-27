@@ -277,8 +277,6 @@ public class JSON {
      * are completely ignored by this method).
      */
     private Bool parseBool() {
-        if (jsonStr.charAt(idx) != 't' && jsonStr.charAt(idx) != 'f')
-            throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder bool = new StringBuilder();
         while (jsonStr.charAt(idx) != 'e')
             if (++idx != len)
@@ -300,8 +298,6 @@ public class JSON {
      * {@link String} {@code "null"}.
      */
     private Null parseNull() {
-        if (jsonStr.charAt(idx) != 'n')
-            throw new JSONParseException("Precondition violated at "+idx);
         if (jsonStr.indexOf("null", idx)+3 == (idx+=3))
             return Null.NULL;
         else 

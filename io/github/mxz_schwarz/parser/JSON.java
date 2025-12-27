@@ -6,7 +6,6 @@ import java.util.Set;
 import java.util.LinkedList;
 import java.math.BigInteger;
 import java.math.BigDecimal;
-import java.util.function.Function;
 
 /**
  * {@code class} that does most of the parsing legwork via the {@code public} 
@@ -198,8 +197,7 @@ public class JSON {
                     case 't' -> '\t';
                     case 'u' -> {
                         try {
-                            yield (char) ('\u0000' + 
-                            Integer.parseInt(jsonStr.substring(idx, idx+=4), 16));
+                            yield (char) (Integer.parseInt(jsonStr.substring(++idx, (idx+=3)+1), 16));
                         } catch (NumberFormatException nfe) {
                             throw new JSONParseException(nfe, "Expected escape sequence at "+idx);
                         }
@@ -224,24 +222,69 @@ public class JSON {
      * @throws JSONParseException When {@link #jsonStr} can't be parsed as a 
      * valid number from the specified index.
      */
-    // needs to handle scientific notation.
     private Num parseNum() {
         if (!DIGITS.contains(jsonStr.charAt(idx)) && jsonStr.charAt(idx) != '-')
             throw new JSONParseException("Precondition violated at "+idx);
-        boolean decimal = false;
         StringBuilder num = new StringBuilder();
-        do num.append(jsonStr.charAt(idx++));
-        while (DIGITS.contains(jsonStr.charAt(idx)) || 
-        (!decimal && (decimal = jsonStr.charAt(idx) == '.')));
-        if (num.charAt(num.length()-1) == '.' || 
-        (num.charAt(0) == 0 && num.length() > 1 && num.charAt(1) != '.'))
-            throw new JSONParseException("Unexpected character in number at "+idx);
-        Function<String, Number> primParser = decimal ? Double::parseDouble : Long::parseLong;
-        Function<String, Number> bigParser = decimal ? BigDecimal::new : BigInteger::new;
+        num.append(jsonStr.charAt(idx));
+        if (jsonStr.charAt(idx) == '-')
+            if (idx+1 == jsonStr.length() || !DIGITS.contains(jsonStr.charAt(1+idx)))
+                throw new JSONParseException("Expected a number at "+idx);
+            else num.append(jsonStr.charAt(++idx));
+        if (jsonStr.charAt(idx) == '0')
+            if (idx+1 == jsonStr.length())
+                return Num.ZERO;
+            else if (jsonStr.charAt(1+idx) == '.')
+                return parseDecimal(num);
+            else if(jsonStr.charAt(idx) == 'e' || jsonStr.charAt(idx) == 'E')
+                return parseSciNot(num);
+            else return Num.ZERO;
+        while (idx+1 != jsonStr.length() && DIGITS.contains(jsonStr.charAt(idx+1)))
+            num.append(jsonStr.charAt(++idx));
+        if (idx+1 != jsonStr.length()) 
+            if (jsonStr.charAt(idx+1) == 'e' || jsonStr.charAt(idx+1) == 'E')
+                return parseSciNot(num);
+            else if (jsonStr.charAt(idx+1) == '.')
+                return parseDecimal(num);
         try {
-            return new Num(primParser.apply(num.toString()));
+            return new Num(Long.parseLong(num.toString()));
         } catch (NumberFormatException nfe) {
-            return new Num(bigParser.apply(num.toString()));
+            return new Num(new BigInteger(num.toString()));
+        }
+    }
+
+    private Num parseDecimal(StringBuilder num) {
+        if (++idx+1 == jsonStr.length() || !DIGITS.contains(jsonStr.charAt(idx+1)))
+            throw new JSONParseException("Unexpected trailing decimal at "+idx);
+        num.append('.').append(jsonStr.charAt(++idx));
+        while (idx+1 != jsonStr.length() && DIGITS.contains(jsonStr.charAt(idx+1)))
+            num.append(jsonStr.charAt(++idx));
+        if (idx+1 != jsonStr.length() && (jsonStr.charAt(idx+1) == 'e' || jsonStr.charAt(idx+1) == 'E'))
+            return parseSciNot(num);
+        try {
+            return new Num(Double.parseDouble(num.toString()));
+        } catch (NumberFormatException nfe) {
+            return new Num(new BigDecimal(num.toString()));
+        }
+    }
+
+    private Num parseSciNot(StringBuilder num) {
+        if (++idx+1 == jsonStr.length())
+            throw new JSONParseException("Unexpected end of JSON at "+idx);
+        num.append('e');
+        if (jsonStr.charAt(idx+1) == '+' || jsonStr.charAt(idx+1) == '-')
+            num.append(jsonStr.charAt(++idx));
+        if (idx+1 == jsonStr.length())
+            throw new JSONParseException("Unexpected end of JSON at "+idx);
+        if (!DIGITS.contains(jsonStr.charAt(1+idx)))
+            throw new JSONParseException("Expected exponent at "+idx);
+        while (idx+1 != jsonStr.length() && DIGITS.contains(jsonStr.charAt(idx+1)))
+            num.append(jsonStr.charAt(++idx));
+        String numStr = num.toString();
+        try {
+            return new Num(Double.parseDouble(numStr));
+        } catch (NumberFormatException nfe) {
+            return new Num(new BigDecimal(numStr));
         }
     }
 
@@ -259,7 +302,7 @@ public class JSON {
             throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder bool = new StringBuilder();
         while (jsonStr.charAt(idx) != 'e')
-            if (++idx < jsonStr.length())
+            if (++idx != jsonStr.length())
                 bool.append(jsonStr.charAt(idx));
             else 
                 throw new JSONParseException("Expected boolean at "+idx);
@@ -304,8 +347,6 @@ public class JSON {
             default -> throw new JSONParseException("Expected value at "+idx);
         };
         idx++;
-        if (idx < jsonStr.length())
-            IO.println(jsonStr.charAt(idx));
         return val;
     }
 
@@ -314,7 +355,7 @@ public class JSON {
      * isn't a member of {@link #WHITESPACE} or {@code idx == jsonStr.length()}.
      */
     private void skipWS() {
-        while(idx < jsonStr.length())
+        while(idx != jsonStr.length())
             if (WHITESPACE.contains(jsonStr.charAt(idx)))
                 idx++;
             else break;

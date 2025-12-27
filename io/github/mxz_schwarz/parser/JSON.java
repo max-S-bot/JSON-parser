@@ -33,6 +33,7 @@ public class JSON {
     private static final Set<Character> INVALID_STR_CHARS = Set.of('\b', '\f', '\n', '\r', '\t');
 
     /**
+     * Parses a {@link String} representing JSON data.
      * @param jsonStr A {@link String} representing the 
      * JSON data to be parsed.
      * @return A {@link Obj} representing the parsed data.
@@ -49,6 +50,7 @@ public class JSON {
     }
 
     /**
+     * Parses a file containing JSON data.
      * @param path A {@link java.nio.file.Path} instance 
      * that corresponds to a JSON file to be parsed.
      * @return A {@link Obj} representing the parsed JSON file.
@@ -110,29 +112,31 @@ public class JSON {
             return new Map(obj);
         if (jsonStr.charAt(idx) != '"')
             throw new JSONParseException("Expected identifier at "+idx);
-        Str name = parseStr();
+        String name = ((Str) parseVal()).asStr();
         skipWS();
         if (jsonStr.charAt(idx++) != ':')
-            throw new JSONParseException("Expexted entry at "+(idx-1));
+            throw new JSONParseException("Expected entry at "+(idx-1));
         skipWS();
-        obj.put(name.asStr(), parseVal());
+        obj.put(name, parseVal());
         for (;;) {
             skipWS();
             if (idx == jsonStr.length())
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == '}')
                 return new Map(obj);
-            if (jsonStr.charAt(idx) != ',')
-                throw new JSONParseException("Expected entry delimiter at "+idx);
+            if (jsonStr.charAt(idx++) != ',')
+                throw new JSONParseException("Expected entry delimiter at "+(idx-1));
             skipWS();
+            if (idx == jsonStr.length())
+                throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) != '"')
                 throw new JSONParseException("Expected identifier at "+idx);
-            name = parseStr();
+            name = ((Str) parseVal()).asStr(); 
             skipWS();
-            if (jsonStr.charAt(idx) != ':')
-                throw new JSONParseException("Expected entry at "+idx);
+            if (jsonStr.charAt(idx++) != ':')
+                throw new JSONParseException("Expected entry at "+(idx-1));
             skipWS();
-            obj.put(name.asStr(), parseVal());
+            obj.put(name, parseVal());
         }
     }
 
@@ -157,12 +161,58 @@ public class JSON {
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == ']') 
                 return new Arr(arr);  
-            if (jsonStr.charAt(idx) != ',')
-                throw new JSONParseException("Expected element delimiter at "+idx);
+            if (jsonStr.charAt(idx++) != ',')
+                throw new JSONParseException("Expected element delimiter at "+(idx-1));
             skipWS();
+            if (idx == jsonStr.length())
+                throw new JSONParseException("Unexpected end of JSON at "+idx);
             arr.add(parseVal());
         }  
     }   
+
+    /**
+     * @return A {@link Str} that describes the {@link String}
+     * that was parsed. Ignores characters following the end quote.
+     * @throws JSONParseException When the end of {@link #jsonStr}
+     * is reached before an unescaped quote, {@link #jsonStr}
+     * contains a character that should have been escaped but wasn't, 
+     * or a back slash isn't followed by a valid sequence of characters
+     * that can be escaped.
+     */
+    private Str parseStr() {
+        if (jsonStr.charAt(idx) != '"')
+            throw new JSONParseException("Precondition violated at "+idx);
+        StringBuilder sb = new StringBuilder();
+        for (idx++; ;idx++)
+            if (idx == jsonStr.length())
+                throw new JSONParseException("Unexpected end of JSON at "+idx);
+            else if (jsonStr.charAt(idx) == '\\')
+                sb.append(switch (jsonStr.charAt(++idx)) {
+                    case '"' -> '"';
+                    case '\\' -> '\\';
+                    case '/' -> '/';
+                    case 'b' -> '\b';
+                    case 'f' -> '\f';
+                    case 'n' -> '\n';
+                    case 'r' -> '\r';
+                    case 't' -> '\t';
+                    case 'u' -> {
+                        try {
+                            yield (char) ('\u0000' + 
+                            Integer.parseInt(jsonStr.substring(idx, idx+=4), 16));
+                        } catch (NumberFormatException nfe) {
+                            throw new JSONParseException(nfe, "Expected escape sequence at "+idx);
+                        }
+                    }
+                    default -> throw new JSONParseException("Expected escape sequence at "+idx);
+                });
+            else if (INVALID_STR_CHARS.contains(jsonStr.charAt(idx)))
+                throw new JSONParseException("Unexpected literal character at "+idx);
+            else if (jsonStr.charAt(idx) == '"')
+                return new Str(sb.toString());
+            else
+                sb.append(jsonStr.charAt(idx));
+    }
 
     /**
      * @return A {@link Num} that describes the {@link Number} 
@@ -209,64 +259,19 @@ public class JSON {
             throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder bool = new StringBuilder();
         while (jsonStr.charAt(idx) != 'e')
-            if (idx < jsonStr.length())
-                bool.append(jsonStr.charAt(idx++));
+            if (++idx < jsonStr.length())
+                bool.append(jsonStr.charAt(idx));
             else 
                 throw new JSONParseException("Expected boolean at "+idx);
-        if (bool.toString().equals("tru"))
+        if (bool.toString().equals("rue"))
             return Bool.TRUE;
-        else if (bool.toString().equals("fals"))
+        else if (bool.toString().equals("alse"))
             return Bool.FALSE;
         throw new JSONParseException("Expected boolean at "+idx);
     }
 
     /**
-     * @return A {@link Obj} that describes the {@link String}
-     * that was parsed. Ignores characters following the end quote.
-     * @throws JSONParseException When the end of {@link #jsonStr}
-     * is reached before an unescaped quote, {@link #jsonStr}
-     * contains a character that should have been escaped but wasn't, 
-     * or a back slash isn't followed by a valid sequence of characters
-     * that can be escaped.
-     */
-    private Str parseStr() {
-        if (jsonStr.charAt(idx) != '"')
-            throw new JSONParseException("Precondition violated at "+idx);
-        StringBuilder sb = new StringBuilder();
-        for (idx++; ;idx++)
-            if (idx == jsonStr.length())
-                throw new JSONParseException("Unexpected end of JSON at "+idx);
-            else if (jsonStr.charAt(idx) == '\\')
-                sb.append(switch (jsonStr.charAt(++idx)) {
-                    case '"' -> '"';
-                    case '\\' -> '\\';
-                    case '/' -> '/';
-                    case 'b' -> '\b';
-                    case 'f' -> '\f';
-                    case 'n' -> '\n';
-                    case 'r' -> '\r';
-                    case 't' -> '\t';
-                    case 'u' -> {
-                        try {
-                            yield (char) ('\u0000' + 
-                            Integer.parseInt(jsonStr.substring(idx, idx+=4), 16));
-                        } catch (NumberFormatException nfe) {
-                            throw new JSONParseException(nfe, "Expected escape sequence at "+idx);
-                        }
-                    }
-                    default -> throw new JSONParseException("Expected escape sequence at "+idx);
-                });
-            else if (INVALID_STR_CHARS.contains(jsonStr.charAt(idx)))
-                throw new JSONParseException("Unexpected literal character at "+idx);
-            else if (jsonStr.charAt(idx) == '"')
-                break;
-            else
-                sb.append(jsonStr.charAt(idx));
-        return new Str(sb.toString());
-    }
-
-    /**
-     * @return A {@link Obj} that describes a {@code null} value.
+     * @return A {@link Null} that describes a {@code null} value.
      * Ignores the characters after {@code "null"}.
      * @throws JSONParseException When the four characters starting
      * at {@link #idx} in {@link #jsonStr} don't correspond exactly to the 
@@ -299,6 +304,8 @@ public class JSON {
             default -> throw new JSONParseException("Expected value at "+idx);
         };
         idx++;
+        if (idx < jsonStr.length())
+            IO.println(jsonStr.charAt(idx));
         return val;
     }
 

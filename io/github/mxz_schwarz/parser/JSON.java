@@ -82,16 +82,22 @@ public class JSON {
      */
     private int idx = 0;
     /**
+     * The length of jsonStr
+     */
+    private final int len;
+
+    /**
      * @param jsonStr The {@link String}
      * representing the JSON data that 
      * this {@link JSON} instance will parse.
      */
     private JSON(String jsonStr) {
         this.jsonStr = jsonStr;
+        this.len = jsonStr.length(); 
         skipWS();
         this.obj = parseVal();
         skipWS();
-        if (idx != jsonStr.length())
+        if (idx != len)
             throw new JSONParseException("Invalid JSON at "+idx);
     }
 
@@ -104,33 +110,20 @@ public class JSON {
         if (jsonStr.charAt(idx++) != '{')
             throw new JSONParseException("Precondition violated at "+ (idx-1));
         java.util.Map<String, Obj> obj = new HashMap<>();
-        skipWS();
-        if (idx == jsonStr.length())
-            throw new JSONParseException("Unexpected end of JSON at "+idx);
-        if (jsonStr.charAt(idx) == '}')
-            return new Map(obj);
-        if (jsonStr.charAt(idx) != '"')
-            throw new JSONParseException("Expected identifier at "+idx);
-        String name = ((Str) parseVal()).asStr();
-        skipWS();
-        if (jsonStr.charAt(idx++) != ':')
-            throw new JSONParseException("Expected entry at "+(idx-1));
-        skipWS();
-        obj.put(name, parseVal());
-        for (;;) {
+        for (boolean flag = false;; flag = true) {
             skipWS();
-            if (idx == jsonStr.length())
+            if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == '}')
                 return new Map(obj);
-            if (jsonStr.charAt(idx++) != ',')
+            if (flag && jsonStr.charAt(idx++) != ',')
                 throw new JSONParseException("Expected entry delimiter at "+(idx-1));
             skipWS();
-            if (idx == jsonStr.length())
+            if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) != '"')
                 throw new JSONParseException("Expected identifier at "+idx);
-            name = ((Str) parseVal()).asStr(); 
+            String name = ((Str) parseVal()).asStr(); 
             skipWS();
             if (jsonStr.charAt(idx++) != ':')
                 throw new JSONParseException("Expected entry at "+(idx-1));
@@ -148,22 +141,16 @@ public class JSON {
         if (jsonStr.charAt(idx++) != '[')
             throw new JSONParseException("Precondition violated at "+(idx-1));
         List<Obj> arr = new LinkedList<>();
-        skipWS();
-        if (idx == jsonStr.length())
-            throw new JSONParseException("Unexpected end of JSON at"+idx);
-        if (jsonStr.charAt(idx) == ']')
-            return new Arr(arr);
-        arr.add(parseVal());
-        for (;;) {
+        for (boolean flag = false;; flag = true) {
             skipWS();
-            if (idx == jsonStr.length())
+            if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == ']') 
                 return new Arr(arr);  
-            if (jsonStr.charAt(idx++) != ',')
+            if (flag && jsonStr.charAt(idx++) != ',')
                 throw new JSONParseException("Expected element delimiter at "+(idx-1));
             skipWS();
-            if (idx == jsonStr.length())
+            if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             arr.add(parseVal());
         }  
@@ -183,7 +170,7 @@ public class JSON {
             throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder sb = new StringBuilder();
         for (idx++; ;idx++)
-            if (idx == jsonStr.length())
+            if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             else if (jsonStr.charAt(idx) == '\\')
                 sb.append(switch (jsonStr.charAt(++idx)) {
@@ -228,20 +215,20 @@ public class JSON {
         StringBuilder num = new StringBuilder();
         num.append(jsonStr.charAt(idx));
         if (jsonStr.charAt(idx) == '-')
-            if (idx+1 == jsonStr.length() || !DIGITS.contains(jsonStr.charAt(1+idx)))
+            if (idx+1 == len || !DIGITS.contains(jsonStr.charAt(1+idx)))
                 throw new JSONParseException("Expected a number at "+idx);
             else num.append(jsonStr.charAt(++idx));
         if (jsonStr.charAt(idx) == '0')
-            if (idx+1 == jsonStr.length())
+            if (idx+1 == len)
                 return Num.ZERO;
             else if (jsonStr.charAt(1+idx) == '.')
                 return parseDecimal(num);
             else if(jsonStr.charAt(idx) == 'e' || jsonStr.charAt(idx) == 'E')
                 return parseSciNot(num);
             else return Num.ZERO;
-        while (idx+1 != jsonStr.length() && DIGITS.contains(jsonStr.charAt(idx+1)))
+        while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));
-        if (idx+1 != jsonStr.length()) 
+        if (idx+1 != len) 
             if (jsonStr.charAt(idx+1) == 'e' || jsonStr.charAt(idx+1) == 'E')
                 return parseSciNot(num);
             else if (jsonStr.charAt(idx+1) == '.')
@@ -254,12 +241,12 @@ public class JSON {
     }
 
     private Num parseDecimal(StringBuilder num) {
-        if (++idx+1 == jsonStr.length() || !DIGITS.contains(jsonStr.charAt(idx+1)))
+        if (++idx+1 == len || !DIGITS.contains(jsonStr.charAt(idx+1)))
             throw new JSONParseException("Unexpected trailing decimal at "+idx);
         num.append('.').append(jsonStr.charAt(++idx));
-        while (idx+1 != jsonStr.length() && DIGITS.contains(jsonStr.charAt(idx+1)))
+        while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));
-        if (idx+1 != jsonStr.length() && (jsonStr.charAt(idx+1) == 'e' || jsonStr.charAt(idx+1) == 'E'))
+        if (idx+1 != len && (jsonStr.charAt(idx+1) == 'e' || jsonStr.charAt(idx+1) == 'E'))
             return parseSciNot(num);
         try {
             return new Num(Double.parseDouble(num.toString()));
@@ -269,16 +256,16 @@ public class JSON {
     }
 
     private Num parseSciNot(StringBuilder num) {
-        if (++idx+1 == jsonStr.length())
+        if (++idx+1 == len)
             throw new JSONParseException("Unexpected end of JSON at "+idx);
         num.append('e');
         if (jsonStr.charAt(idx+1) == '+' || jsonStr.charAt(idx+1) == '-')
             num.append(jsonStr.charAt(++idx));
-        if (idx+1 == jsonStr.length())
+        if (idx+1 == len)
             throw new JSONParseException("Unexpected end of JSON at "+idx);
         if (!DIGITS.contains(jsonStr.charAt(1+idx)))
             throw new JSONParseException("Expected exponent at "+idx);
-        while (idx+1 != jsonStr.length() && DIGITS.contains(jsonStr.charAt(idx+1)))
+        while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));
         String numStr = num.toString();
         try {
@@ -302,7 +289,7 @@ public class JSON {
             throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder bool = new StringBuilder();
         while (jsonStr.charAt(idx) != 'e')
-            if (++idx != jsonStr.length())
+            if (++idx != len)
                 bool.append(jsonStr.charAt(idx));
             else 
                 throw new JSONParseException("Expected boolean at "+idx);
@@ -352,10 +339,10 @@ public class JSON {
 
     /**
      * Increments {@link #idx} until either {@code jsonStr.charAt(idx)}
-     * isn't a member of {@link #WHITESPACE} or {@code idx == jsonStr.length()}.
+     * isn't a member of {@link #WHITESPACE} or {@code idx == len}.
      */
     private void skipWS() {
-        while(idx != jsonStr.length())
+        while(idx != len)
             if (WHITESPACE.contains(jsonStr.charAt(idx)))
                 idx++;
             else break;

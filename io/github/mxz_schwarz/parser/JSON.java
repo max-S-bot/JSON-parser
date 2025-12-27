@@ -107,8 +107,6 @@ public class JSON {
      * @throws JSONParseException when the given object is invalid
      */
     private Map parseObj() {
-        if (jsonStr.charAt(idx++) != '{')
-            throw new JSONParseException("Precondition violated at "+ (idx-1));
         java.util.Map<String, Obj> obj = new HashMap<>();
         for (boolean flag = false;; flag = true) {
             skipWS();
@@ -138,8 +136,6 @@ public class JSON {
      * isn't a valid JSON array.
      */
     private Arr parseArr() {
-        if (jsonStr.charAt(idx++) != '[')
-            throw new JSONParseException("Precondition violated at "+(idx-1));
         List<Obj> arr = new LinkedList<>();
         for (boolean flag = false;; flag = true) {
             skipWS();
@@ -166,8 +162,6 @@ public class JSON {
      * that can be escaped.
      */
     private Str parseStr() {
-        if (jsonStr.charAt(idx) != '"')
-            throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder sb = new StringBuilder();
         for (idx++; ;idx++)
             if (idx == len)
@@ -210,18 +204,16 @@ public class JSON {
      * valid number from the specified index.
      */
     private Num parseNum() {
-        if (!DIGITS.contains(jsonStr.charAt(idx)) && jsonStr.charAt(idx) != '-')
-            throw new JSONParseException("Precondition violated at "+idx);
         StringBuilder num = new StringBuilder();
         num.append(jsonStr.charAt(idx));
         if (jsonStr.charAt(idx) == '-')
-            if (idx+1 == len || !DIGITS.contains(jsonStr.charAt(1+idx)))
+            if (idx+1 == len || !DIGITS.contains(jsonStr.charAt(idx+1)))
                 throw new JSONParseException("Expected a number at "+idx);
             else num.append(jsonStr.charAt(++idx));
         if (jsonStr.charAt(idx) == '0')
             if (idx+1 == len)
                 return Num.ZERO;
-            else if (jsonStr.charAt(1+idx) == '.')
+            else if (jsonStr.charAt(idx+1) == '.')
                 return parseDecimal(num);
             else if(jsonStr.charAt(idx) == 'e' || jsonStr.charAt(idx) == 'E')
                 return parseSciNot(num);
@@ -263,7 +255,7 @@ public class JSON {
             num.append(jsonStr.charAt(++idx));
         if (idx+1 == len)
             throw new JSONParseException("Unexpected end of JSON at "+idx);
-        if (!DIGITS.contains(jsonStr.charAt(1+idx)))
+        if (!DIGITS.contains(jsonStr.charAt(idx+1)))
             throw new JSONParseException("Expected exponent at "+idx);
         while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));

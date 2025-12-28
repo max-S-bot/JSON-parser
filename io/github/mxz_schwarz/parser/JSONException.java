@@ -6,7 +6,7 @@ package io.github.mxz_schwarz.parser;
  * and back into a checked {@link JSONException} with 
  * {@link JSONRuntimeException#checked()}. Instances of {@link JSONException} 
  * should be thrown by {@code public} or {@code protected} executables. Instances
- *  of {@link JSONRuntimeException} should be thrown by executables with
+ * of {@link JSONRuntimeException} should be thrown by executables with
  * visibility of {@code package private} or lower and then caught in {@code public}
  * or {@code protected} executables in order to chain them in a {@link JSONException}.
  * @author max-S-bot

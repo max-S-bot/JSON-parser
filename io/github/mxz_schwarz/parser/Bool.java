@@ -1,5 +1,9 @@
 package io.github.mxz_schwarz.parser;
 
+/**
+ * Wrapper class for JSON booleans.
+ * @author max-S-bot
+ */
 public class Bool extends Obj {
     static final Bool TRUE = new Bool();
     static final Bool FALSE = new Bool();

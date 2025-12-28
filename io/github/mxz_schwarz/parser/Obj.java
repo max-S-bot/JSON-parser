@@ -23,11 +23,7 @@ public abstract class Obj {
     }
     
     public Num toNum() throws JSONException {
-        try {
-            return (Num) this;
-        } catch(ClassCastException cce) {
-            throw new JSONException(cce, "not a Num");
-        }
+        throw new JSONException("not a Num");
     }
 
     /**
@@ -85,12 +81,13 @@ public abstract class Obj {
         throw new JSONException("not an array");
     }
 
+    /**
+     * Returns {@code this} if it's an {@link Arr}.
+     * @return {@code this}.
+     * @throws JSONException When {@code}
+     */
     public Arr toArr() throws JSONException {
-        try {
-            return (Arr) this;
-        } catch (ClassCastException cce) {
-            throw new JSONException(cce, "not an Arr");
-        }
+        throw new JSONException("not an Arr");
     }
 
     /**
@@ -104,12 +101,14 @@ public abstract class Obj {
         throw new JSONException("not a Map");
     }
 
+    /**
+     * Return {@code this} if it's a {@link Map}.
+     * @return {@code this}.
+     * @throws JSONException When {@code this}
+     * is not a {@link Map}.
+     */
     public Map toMap() throws JSONException {
-        try {
-            return (Map) this;
-        } catch (ClassCastException cce) {
-            throw new JSONException(cce, "not a Map");
-        }
+        throw new JSONException("not a Map");
     }
 
     /** 

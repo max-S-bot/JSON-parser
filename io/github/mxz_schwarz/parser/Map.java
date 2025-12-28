@@ -1,5 +1,9 @@
 package io.github.mxz_schwarz.parser;
 
+/**
+ * A wrapper class for JSON objects.
+ * @author max-S-bot
+ */
 public class Map extends Obj {
 
     private final java.util.Map<String, Obj> val;
@@ -11,6 +15,11 @@ public class Map extends Obj {
     @Override 
     public java.util.Map<String, Obj> asMap() {
         return val;
+    }
+
+    @Override
+    public Map toMap() {
+        return this;
     }
 
     @Override 

@@ -2,6 +2,10 @@ package io.github.mxz_schwarz.parser;
 
 import java.util.List;
 
+/**
+ * Wrapper class for JSON arrays.
+ * @author max-S-bot
+ */
 public class Arr extends Obj {
 
     private final List<Obj> val;
@@ -13,6 +17,11 @@ public class Arr extends Obj {
     @Override
     public Obj[] asArr() {
         return val.toArray(Obj[]::new);
+    }
+
+    @Override 
+    public Arr toArr() {
+        return this;
     }
 
     @Override

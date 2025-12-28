@@ -30,7 +30,7 @@ public class Test {
     }
 }" > Test.java
 
-java -cp jar-stuff/parser.jar Test.java json-acceptance-tests/json-checker/*
+java -cp parser.jar Test.java json-acceptance-tests/json-checker/*
 
 rm  Test.java
 rm -rf json-acceptance-tests

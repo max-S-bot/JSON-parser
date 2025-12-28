@@ -1,5 +1,9 @@
 package io.github.mxz_schwarz.parser;
 
+/**
+ * A wrapper class for JSON strings.
+ * @author max-S-bot
+ */
 public class Str extends Obj {
 
     private final String val;

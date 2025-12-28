@@ -108,6 +108,7 @@ public class JSON {
      */
     private Map parseObj() {
         java.util.Map<String, Obj> obj = new HashMap<>();
+        idx++;
         for (boolean flag = false;; flag = true) {
             skipWS();
             if (idx == len)
@@ -137,12 +138,13 @@ public class JSON {
      */
     private Arr parseArr() {
         List<Obj> arr = new LinkedList<>();
+        idx++;
         for (boolean flag = false;; flag = true) {
             skipWS();
             if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == ']') 
-                return new Arr(arr);  
+                return new Arr(arr);
             if (flag && jsonStr.charAt(idx++) != ',')
                 throw new JSONParseException("Expected element delimiter at "+(idx-1));
             skipWS();

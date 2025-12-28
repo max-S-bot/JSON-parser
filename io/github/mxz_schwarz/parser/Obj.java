@@ -1,6 +1,5 @@
 package io.github.mxz_schwarz.parser;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.List;
 
@@ -21,6 +20,14 @@ public abstract class Obj {
      */
     public Number asNum() throws JSONException {
         throw new JSONException("not a Number");
+    }
+    
+    public Num toNum() throws JSONException {
+        try {
+            return (Num) this;
+        } catch(ClassCastException cce) {
+            throw new JSONException(cce, "not a Num");
+        }
     }
 
     /**
@@ -78,15 +85,31 @@ public abstract class Obj {
         throw new JSONException("not an array");
     }
 
+    public Arr toArr() throws JSONException {
+        try {
+            return (Arr) this;
+        } catch (ClassCastException cce) {
+            throw new JSONException(cce, "not an Arr");
+        }
+    }
+
     /**
-     * Returns a {@link Map<String, Obj>} when {@code this}
-     * represents a boolean.
+     * Returns a {@link java.util.Map<String, Obj>} 
+     * when {@code this} represents a boolean.
      * @return The value wrapped in {@code this}.
      * @throws JSONException When {@code this}
      * isn't a {@link Map}.
      */
-    public Map<String, Obj> asMap() throws JSONException {
+    public java.util.Map<String, Obj> asMap() throws JSONException {
         throw new JSONException("not a Map");
+    }
+
+    public Map toMap() throws JSONException {
+        try {
+            return (Map) this;
+        } catch (ClassCastException cce) {
+            throw new JSONException(cce, "not a Map");
+        }
     }
 
     /** 

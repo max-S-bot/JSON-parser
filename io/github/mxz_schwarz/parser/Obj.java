@@ -22,7 +22,7 @@ public abstract class Obj {
         throw new JSONException("not a Number");
     }
     
-    public <N extends Number> Num<N> toNum() throws JSONException {
+    public Num<? extends Number> toNum() throws JSONException {
         throw new JSONException("not a Num");
     }
 
@@ -60,24 +60,13 @@ public abstract class Obj {
     }
 
     /**
-     * Returns a {@code Obj[]} when {@code this}
-     * represents a an array.
-     * @return The value wrapped in {@code this}.
-     * @throws JSONException When {@code this}
-     * isn't a {@link Arr}.
-     */
-	public Obj[] asArr() throws JSONException {
-        throw new JSONException("not an array");
-    }
-
-    /**
      * Returns a {@link List<Obj>} when {@code this}
      * represents an array.
      * @return The value wrapped in {@code this}.
      * @throws JSONException When {@code this}
      * isn't a {@link Arr}.
      */
-    public List<Obj> asList() throws JSONException {
+    public <T extends Obj> List<T> asList() throws JSONException {
         throw new JSONException("not an array");
     }
 
@@ -86,7 +75,7 @@ public abstract class Obj {
      * @return {@code this}.
      * @throws JSONException When {@code}
      */
-    public Arr toArr() throws JSONException {
+    public Arr<? extends Obj> toArr() throws JSONException {
         throw new JSONException("not an Arr");
     }
 
@@ -97,7 +86,7 @@ public abstract class Obj {
      * @throws JSONException When {@code this}
      * isn't a {@link Map}.
      */
-    public java.util.Map<String, Obj> asMap() throws JSONException {
+    public java.util.Map<String, ? extends Obj> asMap() throws JSONException {
         throw new JSONException("not a Map");
     }
 
@@ -107,7 +96,7 @@ public abstract class Obj {
      * @throws JSONException When {@code this}
      * is not a {@link Map}.
      */
-    public Map toMap() throws JSONException {
+    public Map<? extends Obj> toMap() throws JSONException {
         throw new JSONException("not a Map");
     }
 

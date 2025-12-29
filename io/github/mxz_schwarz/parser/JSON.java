@@ -126,7 +126,7 @@ public class JSON<N extends Number> {
      * parsed object.
      * @throws JSONParseException when the given object is invalid
      */
-    private Map parseObj() {
+    private <T extends Obj> Map<T> parseMap() {
         java.util.Map<String, Obj> obj = new HashMap<>();
         idx++;
         for (boolean flag = false;; flag = true) {
@@ -156,7 +156,7 @@ public class JSON<N extends Number> {
      * @throws JSONParseException When the array being parsed 
      * isn't a valid JSON array.
      */
-    private Arr parseArr() {
+    private <T extends Obj> Arr<T> parseArr() {
         List<Obj> arr = new LinkedList<>();
         idx++;
         for (boolean flag = false;; flag = true) {
@@ -346,7 +346,7 @@ public class JSON<N extends Number> {
                 -> parseNum();
             case '"' -> parseStr();
             case '[' -> parseArr();
-            case '{' -> parseObj();
+            case '{' -> parseMap();
             default -> throw new JSONParseException("Expected value at "+idx);
         };
         idx++;

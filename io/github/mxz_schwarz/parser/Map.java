@@ -4,21 +4,21 @@ package io.github.mxz_schwarz.parser;
  * A wrapper class for JSON objects.
  * @author max-S-bot
  */
-public class Map extends Obj {
+public class Map<T extends Obj> extends Obj {
 
-    private final java.util.Map<String, Obj> val;
+    private final java.util.Map<String, T> val;
 
-    Map(java.util.Map<String, Obj> val) {
+    Map(java.util.Map<String, T> val) {
         this.val = java.util.Map.copyOf(val);
     }
 
     @Override 
-    public java.util.Map<String, Obj> asMap() {
+    public java.util.Map<String, T> asMap() {
         return val;
     }
 
     @Override
-    public Map toMap() {
+    public Map<T> toMap() {
         return this;
     }
 

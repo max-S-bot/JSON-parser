@@ -6,7 +6,7 @@ import java.util.List;
  * Wrapper class for JSON arrays.
  * @author max-S-bot
  */
-public class Arr extends Obj {
+public class Arr<T extends Obj> extends Obj {
 
     private final List<Obj> val;
 
@@ -14,13 +14,9 @@ public class Arr extends Obj {
         this.val = List.copyOf(val);
     }
 
-    @Override
-    public Obj[] asArr() {
-        return val.toArray(Obj[]::new);
-    }
 
     @Override 
-    public Arr toArr() {
+    public Arr<T> toArr() throws JSONException {
         return this;
     }
 

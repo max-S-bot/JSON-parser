@@ -66,7 +66,7 @@ public abstract class Obj {
      * @throws JSONException When {@code this}
      * isn't a {@link Arr}.
      */
-    public <T extends Obj> List<T> asList() throws JSONException {
+    public List<? extends Obj> asList() throws JSONException {
         throw new JSONException("not an array");
     }
 

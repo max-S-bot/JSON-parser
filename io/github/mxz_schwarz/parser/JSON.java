@@ -126,15 +126,15 @@ public class JSON<N extends Number> {
      * parsed object.
      * @throws JSONParseException when the given object is invalid
      */
-    private <T extends Obj> Map<T> parseMap() {
-        java.util.Map<String, Obj> obj = new HashMap<>();
+    private Map<? extends Obj> parseMap() {
+        java.util.Map<String, Obj> map = new HashMap<>();
         idx++;
         for (boolean flag = false;; flag = true) {
             skipWS();
             if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == '}')
-                return new Map(obj);
+                return new Map<>(map);
             if (flag && jsonStr.charAt(idx++) != ',')
                 throw new JSONParseException("Expected entry delimiter at "+(idx-1));
             skipWS();
@@ -147,7 +147,7 @@ public class JSON<N extends Number> {
             if (jsonStr.charAt(idx++) != ':')
                 throw new JSONParseException("Expected entry at "+(idx-1));
             skipWS();
-            obj.put(name, parseVal());
+            map.put(name, parseVal());
         }
     }
 
@@ -156,7 +156,7 @@ public class JSON<N extends Number> {
      * @throws JSONParseException When the array being parsed 
      * isn't a valid JSON array.
      */
-    private <T extends Obj> Arr<T> parseArr() {
+    private Arr<? extends Obj> parseArr() {
         List<Obj> arr = new LinkedList<>();
         idx++;
         for (boolean flag = false;; flag = true) {
@@ -164,7 +164,7 @@ public class JSON<N extends Number> {
             if (idx == len)
                 throw new JSONParseException("Unexpected end of JSON at "+idx);
             if (jsonStr.charAt(idx) == ']') 
-                return new Arr(arr);
+                return new Arr<>(arr);
             if (flag && jsonStr.charAt(idx++) != ',')
                 throw new JSONParseException("Expected element delimiter at "+(idx-1));
             skipWS();

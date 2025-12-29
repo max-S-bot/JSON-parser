@@ -8,12 +8,11 @@ import java.util.List;
  */
 public class Arr<T extends Obj> extends Obj {
 
-    private final List<Obj> val;
+    private final List<T> val;
 
-    Arr(List<Obj> val) {
+    Arr(List<T> val) {
         this.val = List.copyOf(val);
     }
-
 
     @Override 
     public Arr<T> toArr() throws JSONException {
@@ -21,7 +20,7 @@ public class Arr<T extends Obj> extends Obj {
     }
 
     @Override
-    public List<Obj> asList() {
+    public List<T> asList() {
         return val;
     }
 

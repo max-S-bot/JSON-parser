@@ -11,7 +11,7 @@ public class Bool extends Obj {
     private Bool () {}
 
     @Override
-    public boolean asBool() {
+    public boolean toBool() {
         return this == TRUE;
     }
 

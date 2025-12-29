@@ -13,12 +13,12 @@ public class Map<T extends Obj> extends Obj {
     }
 
     @Override 
-    public java.util.Map<String, T> asMap() {
+    public java.util.Map<String, T> toMap() {
         return val;
     }
 
     @Override
-    public Map<T> toMap() {
+    public Map<T> asMap() {
         return this;
     }
 

@@ -217,11 +217,7 @@ public class JSON<N extends Number> {
 
     /**
      * @return A {@link Num} that describes the {@link Number} 
-     * that was parsed. If the number is an integer the {@link Number}
-     * is a {@link Long} if it can be precisely represented by one, otherwise
-     * it is a {@link BigInteger}. If the number is a decimal or is encoded 
-     * with scientific notation, it's parsed as a {@link Double} (again, if 
-     * it can be precisely represented by one), otherwise it is a {@link BigDecimal}.
+     * that was parsed. The 
      * @throws JSONParseException When {@link #jsonStr} can't be parsed as a 
      * valid number from the specified index.
      */

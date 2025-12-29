@@ -13,12 +13,12 @@ public class Num<N extends Number> extends Obj {
     }
 
     @Override
-    public Num<N> toNum() {
+    public Num<N> asNum() {
         return this;
     }
 
     @Override
-    public N asNum() {
+    public N toNum() {
         return val;
     }
 

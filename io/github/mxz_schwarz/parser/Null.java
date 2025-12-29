@@ -11,7 +11,7 @@ public class Null extends Obj {
     private Null () {}
 
     @Override
-    public Object asNull() {
+    public Object toNull() {
         return null;
     }
 

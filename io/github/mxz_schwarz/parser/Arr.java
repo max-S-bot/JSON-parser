@@ -15,12 +15,12 @@ public class Arr<T extends Obj> extends Obj {
     }
 
     @Override 
-    public Arr<T> toArr() throws JSONException {
+    public Arr<T> asArr() throws JSONException {
         return this;
     }
 
     @Override
-    public List<T> asList() {
+    public List<T> toList() {
         return val;
     }
 

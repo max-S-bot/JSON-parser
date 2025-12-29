@@ -13,7 +13,7 @@ public class Str extends Obj {
     }
 
     @Override
-    public String asStr() {
+    public String toStr() {
         return val;
     }
 

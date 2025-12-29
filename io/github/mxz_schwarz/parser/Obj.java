@@ -18,11 +18,11 @@ public abstract class Obj {
      * @throws JSONException When {@code this}
      * isn't a {@link Num}.
      */
-    public Number asNum() throws JSONException {
+    public <N extends Number> N asNum() throws JSONException {
         throw new JSONException("not a Number");
     }
     
-    public Num toNum() throws JSONException {
+    public <N extends Number> Num<N> toNum() throws JSONException {
         throw new JSONException("not a Num");
     }
 
@@ -126,6 +126,11 @@ public abstract class Obj {
         if (o instanceof Obj obj)
             return Objects.equals(val(), obj.val());
         else return false;
+    }
+
+    @Override 
+    public int hashCode() {
+        return Objects.hashCode(val());
     }
 
 }

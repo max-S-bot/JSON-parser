@@ -4,23 +4,21 @@ package io.github.mxz_schwarz.parser;
  * A wrapper class for JSON numbers.
  * @author max-S-bot
  */
-public class Num extends Obj {
+public class Num<N extends Number> extends Obj {
 
-    static final Num ZERO = new Num(0L);
+    private final N val;
 
-    private final Number val;
-
-    Num(Number val) {
+    Num(N val) {
         this.val = val;
     }
 
     @Override
-    public Num toNum() {
+    public Num<N> toNum() {
         return this;
     }
 
     @Override
-    public Number asNum() {
+    public N asNum() {
         return val;
     }
 

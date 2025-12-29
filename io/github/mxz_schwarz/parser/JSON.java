@@ -5,14 +5,18 @@ import java.util.List;
 import java.util.Set;
 import java.util.LinkedList;
 import java.math.BigInteger;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.function.Function;
+import java.nio.file.Path;
+import java.nio.file.Files;
 
 /**
  * {@code class} that does most of the parsing legwork via the {@code public} 
  * {@link JSON#parse(String)} and {@link JSON#parse(java.nio.file.Path)} methods.
  * @author max-S-bot
  */
-public class JSON {
+public class JSON<N extends Number> {
 
     /**
      * {@link Set} of whitespace characters that 
@@ -39,10 +43,15 @@ public class JSON {
      * @throws JSONException When {@link #jsonStr}
      * does not represent valid JSON data.
      */
-    public static Obj parse(String jsonStr) 
+    public static Obj parse(String jsonStr) throws JSONException {
+        return parse(jsonStr, Double::parseDouble);
+    }
+
+    public static <N extends Number> Obj parse(String jsonStr, 
+        Function<String, N> numParser) 
         throws JSONException {
         try {
-            return new JSON(jsonStr).obj;
+            return new JSON<N>(jsonStr, numParser).obj;
         } catch (JSONParseException jpe) {
             throw new JSONException(jpe);
         }
@@ -50,18 +59,23 @@ public class JSON {
 
     /**
      * Parses a file containing JSON data.
-     * @param path A {@link java.nio.file.Path} instance 
+     * @param path A {@link Path} instance 
      * that corresponds to a JSON file to be parsed.
      * @return A {@link Obj} representing the parsed JSON file.
-     * @throws JSONException When {@link java.nio.file.Files#readString}
+     * @throws JSONException When {@link Files#readString}
      * {@code throws} an {@link java.io.IOException} or when {@link parse} 
      * {@code throws} a {@link JSONException}.
      */
-    public static Obj parse(java.nio.file.Path path)
+    public static Obj parse(Path path)
         throws JSONException {
+        return parse(path, Double::parseDouble);
+    }
+
+    public static <N extends Number> Obj parse(Path path, 
+        Function<String, N> numParser) throws JSONException {
         try {
-            return parse(java.nio.file.Files.readString(path));
-        } catch (java.io.IOException ioe) {
+            return parse(Files.readString(path));
+        } catch (IOException ioe) {
             throw new JSONException(ioe, "IO exception");
         }
     }
@@ -71,6 +85,11 @@ public class JSON {
      * data to parse.
      */
     private final String jsonStr;
+    /**
+     * The function this JSON instance will use
+     *  to parse numbers.
+     */
+    private final Function<String, N> numParser;
     /**
      * The {@link Obj} representing 
      * the parsed JSON data.
@@ -91,9 +110,10 @@ public class JSON {
      * representing the JSON data that 
      * this {@link JSON} instance will parse.
      */
-    private JSON(String jsonStr) {
+    private JSON(String jsonStr, Function<String, N> numParser) {
         this.jsonStr = jsonStr;
         this.len = jsonStr.length(); 
+        this.numParser = numParser;
         skipWS();
         this.obj = parseVal();
         skipWS();
@@ -205,7 +225,7 @@ public class JSON {
      * @throws JSONParseException When {@link #jsonStr} can't be parsed as a 
      * valid number from the specified index.
      */
-    private Num parseNum() {
+    private Num<N> parseNum() {
         StringBuilder num = new StringBuilder();
         num.append(jsonStr.charAt(idx));
         if (jsonStr.charAt(idx) == '-')
@@ -214,12 +234,12 @@ public class JSON {
             else num.append(jsonStr.charAt(++idx));
         if (jsonStr.charAt(idx) == '0')
             if (idx+1 == len)
-                return Num.ZERO;
+                return new Num<N>(numParser.apply("0"));
             else if (jsonStr.charAt(idx+1) == '.')
                 return parseDecimal(num);
             else if(jsonStr.charAt(idx) == 'e' || jsonStr.charAt(idx) == 'E')
                 return parseSciNot(num);
-            else return Num.ZERO;
+            else return new Num<N>(numParser.apply("0"));
         while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));
         if (idx+1 != len) 
@@ -228,9 +248,9 @@ public class JSON {
             else if (jsonStr.charAt(idx+1) == '.')
                 return parseDecimal(num);
         try {
-            return new Num(Long.parseLong(num.toString()));
+            return new Num<N>(numParser.apply(num.toString()));
         } catch (NumberFormatException nfe) {
-            return new Num(new BigInteger(num.toString()));
+            throw new JSONParseException(nfe, "Could not parse number");
         }
     }
 
@@ -240,7 +260,7 @@ public class JSON {
      * @return The parsed {@link Num}
      * @throws JSONParseException When
      */
-    private Num parseDecimal(StringBuilder num) {
+    private Num<N> parseDecimal(StringBuilder num) {
         if (++idx+1 == len || !DIGITS.contains(jsonStr.charAt(idx+1)))
             throw new JSONParseException("Unexpected trailing decimal at "+idx);
         num.append('.').append(jsonStr.charAt(++idx));
@@ -249,13 +269,13 @@ public class JSON {
         if (idx+1 != len && (jsonStr.charAt(idx+1) == 'e' || jsonStr.charAt(idx+1) == 'E'))
             return parseSciNot(num);
         try {
-            return new Num(Double.parseDouble(num.toString()));
+            return new Num<N>(numParser.apply(num.toString()));
         } catch (NumberFormatException nfe) {
-            return new Num(new BigDecimal(num.toString()));
+            throw new JSONParseException(nfe, "Could not parse number");
         }
     }
 
-    private Num parseSciNot(StringBuilder num) {
+    private Num<N> parseSciNot(StringBuilder num) {
         if (++idx+1 == len)
             throw new JSONParseException("Unexpected end of JSON at "+idx);
         num.append('e');
@@ -269,9 +289,9 @@ public class JSON {
             num.append(jsonStr.charAt(++idx));
         String numStr = num.toString();
         try {
-            return new Num(Double.parseDouble(numStr));
+            return new Num<N>(numParser.apply(numStr));
         } catch (NumberFormatException nfe) {
-            return new Num(new BigDecimal(numStr));
+            throw new JSONParseException(nfe, "Could not parse number");
         }
     }
 

@@ -1,19 +1,17 @@
 package io.github.mxz_schwarz.parser;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+import java.util.HashMap;
 import java.util.LinkedList;
-import java.math.BigInteger;
-import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.function.Function;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Files;
 
 /**
  * {@code class} that does most of the parsing legwork via the {@code public} 
- * {@link JSON#parse(String)} and {@link JSON#parse(java.nio.file.Path)} methods.
+ * {@code JSON.parse} methods.
  * @author max-S-bot
  */
 public class JSON<N extends Number> {
@@ -118,7 +116,7 @@ public class JSON<N extends Number> {
         this.obj = parseVal();
         skipWS();
         if (idx != len)
-            throw new JSONParseException("Invalid JSON at "+idx);
+            throw new JSONParseException("Invalid JSON");
     }
 
     /**
@@ -132,20 +130,20 @@ public class JSON<N extends Number> {
         for (boolean flag = false;; flag = true) {
             skipWS();
             if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON at "+idx);
+                throw new JSONParseException("Unexpected end of JSON");
             if (jsonStr.charAt(idx) == '}')
                 return new Map<>(map);
             if (flag && jsonStr.charAt(idx++) != ',')
-                throw new JSONParseException("Expected entry delimiter at "+(idx-1));
+                throw new JSONParseException("Expected entry delimiter");
             skipWS();
             if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON at "+idx);
+                throw new JSONParseException("Unexpected end of JSON");
             if (jsonStr.charAt(idx) != '"')
-                throw new JSONParseException("Expected identifier at "+idx);
-            String name = ((Str) parseVal()).asStr(); 
+                throw new JSONParseException("Expected identifier");
+            String name = ((Str) parseVal()).toStr(); 
             skipWS();
             if (jsonStr.charAt(idx++) != ':')
-                throw new JSONParseException("Expected entry at "+(idx-1));
+                throw new JSONParseException("Expected entry");
             skipWS();
             map.put(name, parseVal());
         }
@@ -162,14 +160,14 @@ public class JSON<N extends Number> {
         for (boolean flag = false;; flag = true) {
             skipWS();
             if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON at "+idx);
+                throw new JSONParseException("Unexpected end of JSON");
             if (jsonStr.charAt(idx) == ']') 
                 return new Arr<>(arr);
             if (flag && jsonStr.charAt(idx++) != ',')
-                throw new JSONParseException("Expected element delimiter at "+(idx-1));
+                throw new JSONParseException("Expected element delimiter");
             skipWS();
             if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON at "+idx);
+                throw new JSONParseException("Unexpected end of JSON");
             arr.add(parseVal());
         }  
     }   
@@ -187,9 +185,11 @@ public class JSON<N extends Number> {
         StringBuilder sb = new StringBuilder();
         for (idx++; ;idx++)
             if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON at "+idx);
-            else if (jsonStr.charAt(idx) == '\\')
-                sb.append(switch (jsonStr.charAt(++idx)) {
+                throw new JSONParseException("Unexpected end of JSON");
+            else if (jsonStr.charAt(idx) == '\\') {
+                if (++idx == len)
+                    throw new JSONParseException("Unexpected end of JSON");
+                sb.append(switch (jsonStr.charAt(idx)) {
                     case '"' -> '"';
                     case '\\' -> '\\';
                     case '/' -> '/';
@@ -202,13 +202,15 @@ public class JSON<N extends Number> {
                         try {
                             yield (char) (Integer.parseInt(jsonStr.substring(++idx, (idx+=3)+1), 16));
                         } catch (NumberFormatException nfe) {
-                            throw new JSONParseException(nfe, "Expected escape sequence at "+idx);
+                            throw new JSONParseException(nfe, "Expected escape sequence");
+                        } catch (IndexOutOfBoundsException ioobe) {
+                            throw new JSONParseException("Unexpected end of JSON");
                         }
                     }
-                    default -> throw new JSONParseException("Expected escape sequence at "+idx);
+                    default -> throw new JSONParseException("Expected escape sequence");
                 });
-            else if (INVALID_STR_CHARS.contains(jsonStr.charAt(idx)))
-                throw new JSONParseException("Unexpected literal character at "+idx);
+            } else if (INVALID_STR_CHARS.contains(jsonStr.charAt(idx)))
+                throw new JSONParseException("Unexpected literal character");
             else if (jsonStr.charAt(idx) == '"')
                 return new Str(sb.toString());
             else
@@ -226,7 +228,7 @@ public class JSON<N extends Number> {
         num.append(jsonStr.charAt(idx));
         if (jsonStr.charAt(idx) == '-')
             if (idx+1 == len || !DIGITS.contains(jsonStr.charAt(idx+1)))
-                throw new JSONParseException("Expected a number at "+idx);
+                throw new JSONParseException("Expected a number");
             else num.append(jsonStr.charAt(++idx));
         if (jsonStr.charAt(idx) == '0')
             if (idx+1 == len)
@@ -258,7 +260,7 @@ public class JSON<N extends Number> {
      */
     private Num<N> parseDecimal(StringBuilder num) {
         if (++idx+1 == len || !DIGITS.contains(jsonStr.charAt(idx+1)))
-            throw new JSONParseException("Unexpected trailing decimal at "+idx);
+            throw new JSONParseException("Unexpected trailing decimal");
         num.append('.').append(jsonStr.charAt(++idx));
         while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));
@@ -273,14 +275,14 @@ public class JSON<N extends Number> {
 
     private Num<N> parseSciNot(StringBuilder num) {
         if (++idx+1 == len)
-            throw new JSONParseException("Unexpected end of JSON at "+idx);
+            throw new JSONParseException("Unexpected end of JSON");
         num.append('e');
         if (jsonStr.charAt(idx+1) == '+' || jsonStr.charAt(idx+1) == '-')
             num.append(jsonStr.charAt(++idx));
         if (idx+1 == len)
-            throw new JSONParseException("Unexpected end of JSON at "+idx);
+            throw new JSONParseException("Unexpected end of JSON");
         if (!DIGITS.contains(jsonStr.charAt(idx+1)))
-            throw new JSONParseException("Expected exponent at "+idx);
+            throw new JSONParseException("Expected exponent");
         while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));
         String numStr = num.toString();
@@ -306,12 +308,12 @@ public class JSON<N extends Number> {
             if (++idx != len)
                 bool.append(jsonStr.charAt(idx));
             else 
-                throw new JSONParseException("Expected boolean at "+idx);
+                throw new JSONParseException("Expected boolean");
         if (bool.toString().equals("rue"))
             return Bool.TRUE;
         else if (bool.toString().equals("alse"))
             return Bool.FALSE;
-        throw new JSONParseException("Expected boolean at "+idx);
+        throw new JSONParseException("Expected boolean");
     }
 
     /**
@@ -325,7 +327,7 @@ public class JSON<N extends Number> {
         if (jsonStr.indexOf("null", idx)+3 == (idx+=3))
             return Null.NULL;
         else 
-            throw new JSONParseException("Expected null at "+idx);
+            throw new JSONParseException("Expected null");
     }
 
     /**
@@ -343,7 +345,7 @@ public class JSON<N extends Number> {
             case '"' -> parseStr();
             case '[' -> parseArr();
             case '{' -> parseMap();
-            default -> throw new JSONParseException("Expected value at "+idx);
+            default -> throw new JSONParseException("Expected value");
         };
         idx++;
         return val;

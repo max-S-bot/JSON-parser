@@ -12,11 +12,13 @@ public class Map<T extends Obj> extends Obj {
         this.val = java.util.Map.copyOf(val);
     }
 
+    @SuppressWarnings("unchecked")
     @Override 
     public java.util.Map<String, T> toMap() {
         return val;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Map<T> asMap() {
         return this;

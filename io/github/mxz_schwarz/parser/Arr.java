@@ -14,11 +14,13 @@ public class Arr<T extends Obj> extends Obj {
         this.val = List.copyOf(val);
     }
 
+    @SuppressWarnings("unchecked")
     @Override 
     public Arr<T> asArr() throws JSONException {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public List<T> toList() {
         return val;

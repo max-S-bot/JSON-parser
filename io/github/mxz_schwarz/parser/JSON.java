@@ -351,6 +351,13 @@ public class JSON<N extends Number> {
         return val;
     }
 
+    private <T extends Obj & Iterable<Obj>> Class<? extends Obj> infer(T go) {
+        for (Obj x : go) {
+
+        }
+        return null;
+    }
+
     /**
      * Increments {@link #idx} until either {@code jsonStr.charAt(idx)}
      * isn't a member of {@link #WHITESPACE} or {@code idx == len}.

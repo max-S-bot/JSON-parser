@@ -4,7 +4,7 @@ package io.github.mxz_schwarz.parser;
  * A wrapper class for JSON objects.
  * @author max-S-bot
  */
-public class Map<T extends Obj> extends Obj {
+public class Map<T extends Obj> extends Obj implements Iterable<T> {
 
     private final java.util.Map<String, T> val;
 
@@ -12,14 +12,14 @@ public class Map<T extends Obj> extends Obj {
         this.val = java.util.Map.copyOf(val);
     }
 
-    @SuppressWarnings("unchecked")
     @Override 
+    @SuppressWarnings("unchecked")
     public java.util.Map<String, T> toMap() {
         return val;
     }
 
+    @Override 
     @SuppressWarnings("unchecked")
-    @Override
     public Map<T> asMap() {
         return this;
     }
@@ -27,5 +27,10 @@ public class Map<T extends Obj> extends Obj {
     @Override 
     Object val() {
         return val;
+    }
+
+    @Override
+    public java.util.Iterator<T> iterator() {
+        return val.values().iterator();
     }
 }

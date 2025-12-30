@@ -4,7 +4,8 @@ import java.util.Objects;
 import java.util.List;
 
 /**
- * A wrapper {@code abstract class} that can represent any JSON data.
+ * A wrapper {@code abstract class} that acts as the superclass 
+ * for all JSON data types.
  * This consists mainly of convenience methods to allow  
  * a client to perform less manual casting. 
  * @author max-S-bot

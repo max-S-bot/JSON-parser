@@ -6,7 +6,7 @@ import java.util.List;
  * Wrapper class for JSON arrays.
  * @author max-S-bot
  */
-public class Arr<T extends Obj> extends Obj {
+public class Arr<T extends Obj> extends Obj implements Iterable<T> {
 
     private final List<T> val;
 
@@ -14,14 +14,14 @@ public class Arr<T extends Obj> extends Obj {
         this.val = List.copyOf(val);
     }
 
-    @SuppressWarnings("unchecked")
     @Override 
+    @SuppressWarnings("unchecked")
     public Arr<T> asArr() throws JSONException {
         return this;
     }
 
+    @Override 
     @SuppressWarnings("unchecked")
-    @Override
     public List<T> toList() {
         return val;
     }
@@ -29,5 +29,10 @@ public class Arr<T extends Obj> extends Obj {
     @Override 
     Object val() {
         return val;
+    }
+
+    @Override
+    public java.util.Iterator<T> iterator() {
+        return val.iterator();
     }
 }

@@ -12,14 +12,14 @@ public class Num<N extends Number> extends Obj {
         this.val = val;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
+    @SuppressWarnings("unchecked")
     public Num<N> asNum() {
         return this;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
+    @SuppressWarnings("unchecked")
     public N toNum() {
         return val;
     }

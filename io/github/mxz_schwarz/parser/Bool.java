@@ -15,6 +15,11 @@ public class Bool extends Obj {
         return this == TRUE;
     }
 
+    @Override 
+    Type type() {
+        return Type.BOOL;
+    }
+
     @Override
     Object val() {
         return this == TRUE;

@@ -17,6 +17,11 @@ public class Str extends Obj {
         return val;
     }
 
+    @Override
+    Type type() {
+        return Type.STR;
+    }
+
     @Override 
     Object val() {
         return val;

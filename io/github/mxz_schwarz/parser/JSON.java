@@ -64,8 +64,7 @@ public class JSON<N extends Number> {
      * {@code throws} an {@link java.io.IOException} or when {@link parse} 
      * {@code throws} a {@link JSONException}.
      */
-    public static Obj parse(Path path)
-        throws JSONException {
+    public static Obj parse(Path path) throws JSONException {
         return parse(path, Double::parseDouble);
     }
 
@@ -129,15 +128,13 @@ public class JSON<N extends Number> {
         idx++;
         for (boolean flag = false;; flag = true) {
             skipWS();
-            if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON");
+            throwIfEnd();
             if (jsonStr.charAt(idx) == '}')
                 return new Map<>(map);
             if (flag && jsonStr.charAt(idx++) != ',')
                 throw new JSONParseException("Expected entry delimiter");
             skipWS();
-            if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON");
+            throwIfEnd();
             if (jsonStr.charAt(idx) != '"')
                 throw new JSONParseException("Expected identifier");
             String name = ((Str) parseVal()).toStr(); 
@@ -159,15 +156,13 @@ public class JSON<N extends Number> {
         idx++;
         for (boolean flag = false;; flag = true) {
             skipWS();
-            if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON");
+            throwIfEnd();
             if (jsonStr.charAt(idx) == ']') 
                 return new Arr<>(arr);
             if (flag && jsonStr.charAt(idx++) != ',')
                 throw new JSONParseException("Expected element delimiter");
             skipWS();
-            if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON");
+            throwIfEnd();
             arr.add(parseVal());
         }  
     }   
@@ -183,10 +178,9 @@ public class JSON<N extends Number> {
      */
     private Str parseStr() {
         StringBuilder sb = new StringBuilder();
-        for (idx++; ;idx++)
-            if (idx == len)
-                throw new JSONParseException("Unexpected end of JSON");
-            else if (jsonStr.charAt(idx) == '\\') {
+        for (idx++; ;idx++) {
+            throwIfEnd();
+            if (jsonStr.charAt(idx) == '\\') {
                 if (++idx == len)
                     throw new JSONParseException("Unexpected end of JSON");
                 sb.append(switch (jsonStr.charAt(idx)) {
@@ -215,6 +209,7 @@ public class JSON<N extends Number> {
                 return new Str(sb.toString());
             else
                 sb.append(jsonStr.charAt(idx));
+        }
     }
 
     /**
@@ -273,6 +268,11 @@ public class JSON<N extends Number> {
         }
     }
 
+    /**
+     * @param num The non scientific notation part of the 
+     * number to be parsed 
+     * @return The parsed {@link Num}
+     */
     private Num<N> parseSciNot(StringBuilder num) {
         if (++idx+1 == len)
             throw new JSONParseException("Unexpected end of JSON");
@@ -324,10 +324,14 @@ public class JSON<N extends Number> {
      * {@link String} {@code "null"}.
      */
     private Null parseNull() {
-        if (jsonStr.indexOf("null", idx)+3 == (idx+=3))
-            return Null.NULL;
-        else 
-            throw new JSONParseException("Expected null");
+        try {
+            if (jsonStr.indexOf("null", idx)+3 == (idx+=3))
+                return Null.NULL;
+            else 
+                throw new JSONParseException("Expected null");
+        } catch (IndexOutOfBoundsException ioobe) {
+            throw new JSONParseException("Unexpected end of JSON");
+        }
     }
 
     /**
@@ -351,13 +355,6 @@ public class JSON<N extends Number> {
         return val;
     }
 
-    private <T extends Obj & Iterable<Obj>> Class<? extends Obj> infer(T go) {
-        for (Obj x : go) {
-
-        }
-        return null;
-    }
-
     /**
      * Increments {@link #idx} until either {@code jsonStr.charAt(idx)}
      * isn't a member of {@link #WHITESPACE} or {@code idx == len}.
@@ -367,5 +364,52 @@ public class JSON<N extends Number> {
             if (WHITESPACE.contains(jsonStr.charAt(idx)))
                 idx++;
             else break;
+    }
+
+    private void throwIfEnd() {
+        if (idx == len)
+            throw new JSONParseException("Unexpected end of JSON");
+    }
+
+    public static String stringify(Obj obj) {
+        return switch (obj) {
+
+            case Arr arr -> stringifyArr(arr);
+            case Str str -> stringifyStr(str);
+            default -> obj.toString();
+        };
+    }
+
+    private static String stringifyArr(Arr<? extends Obj> arr) {
+        StringBuilder sb = new StringBuilder().append('[');
+        for (Obj e : arr)
+            sb.append(stringify(e)).append(',');
+        return sb.delete(sb.length()-1, sb.length()).append(']').toString();
+    }
+    
+    private static String stringifyMap(Map<? extends Obj> map) {
+        StringBuilder sb = new StringBuilder().append('{');
+        for (java.util.Map.Entry<String, ? extends Obj> e : map)
+            sb.append(e.getKey()).append(':')
+                .append(stringify(e.getValue())).append(',');
+        return sb.delete(sb.length()-1, sb.length()).append('}').toString();
+    }
+
+    private static String stringifyStr(Str str) {
+        StringBuilder sb = new StringBuilder().append('"');
+        Set.of('\b', '\f', '\n', '\r', '\t');
+        for (char ch : str.toString().toCharArray()) {
+            sb.append(switch(ch) {
+                case '\b' -> "\\b";
+                case '\f' -> "\\f";
+                case '\n' -> "\\n";
+                case '\r' -> "\\r";
+                case '\t' -> "\\t";
+                case '\\' -> "\\\\";
+                case '"' -> "\\\"";
+                default -> ""+ch;
+            });
+        }
+        return sb.append('"').toString();
     }
 }

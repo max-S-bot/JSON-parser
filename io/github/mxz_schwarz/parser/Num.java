@@ -24,6 +24,11 @@ public class Num<N extends Number> extends Obj {
         return val;
     }
 
+    @Override
+    Type type() {
+        return Type.NUM;
+    }
+
     @Override 
     Object val() {
         return val;

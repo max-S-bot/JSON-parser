@@ -29,6 +29,11 @@ public class Map<T extends Obj> extends Obj implements Iterable<T> {
         return val;
     }
 
+    @Override 
+    Type type() {
+        return null;
+    }
+
     @Override
     public java.util.Iterator<T> iterator() {
         return val.values().iterator();

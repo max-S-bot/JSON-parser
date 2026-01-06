@@ -4,8 +4,8 @@ import java.util.Objects;
 import java.util.List;
 
 /**
- * A wrapper {@code abstract class} that acts as the superclass 
- * for all JSON data types.
+ * A wrapper {@code abstract class} that acts as the 
+ * superclass for all JSON data types.
  * This consists mainly of convenience methods to allow  
  * a client to perform less manual casting. 
  * @author max-S-bot
@@ -23,6 +23,12 @@ public abstract class Obj {
         throw new JSONException("not a Number");
     }
     
+    /**
+     * 
+     * @param <N>
+     * @return A {@link Num<N>} desc
+     * @throws JSONException
+     */
     public <N extends Number> Num<N> asNum() throws JSONException {
         throw new JSONException("not a Num");
     }
@@ -50,7 +56,7 @@ public abstract class Obj {
     }
 
     /**
-     * Returns an {@link Object} when {@code this}
+     * Returns {@code null} when {@code this}
      * represents null.
      * @return The value wrapped in {@code this}.
      * @throws JSONException When {@code this}
@@ -106,6 +112,8 @@ public abstract class Obj {
      * @return The value wrapped in {@code this}.
      */
     abstract Object val();
+
+    abstract Type type();
 
     @Override
     public String toString() {

@@ -366,38 +366,43 @@ public class JSON<N extends Number> {
             else break;
     }
 
+    /**
+     * @throws JSONParseException When {@code idx == len}
+     */
     private void throwIfEnd() {
         if (idx == len)
             throw new JSONParseException("Unexpected end of JSON");
     }
 
+    @SuppressWarnings("rawtypes")
     public static String stringify(Obj obj) {
+        if (obj == null) throw new NullPointerException();
         return switch (obj) {
-
+            case Map map -> stringifyMap(map);
             case Arr arr -> stringifyArr(arr);
             case Str str -> stringifyStr(str);
             default -> obj.toString();
         };
     }
 
+    private static String stringifyMap(Map<? extends Obj> map) {
+        StringBuilder sb = new StringBuilder().append('{');
+        for (java.util.Map.Entry<String, ? extends Obj> e : map)
+            // method chaining is fun
+            sb.append('"').append(e.getKey()).append('"').append(':')
+                .append(stringify(e.getValue())).append(',');
+        return sb.delete(sb.length()-1, sb.length()).append('}').toString();
+    }
+    
     private static String stringifyArr(Arr<? extends Obj> arr) {
         StringBuilder sb = new StringBuilder().append('[');
         for (Obj e : arr)
             sb.append(stringify(e)).append(',');
         return sb.delete(sb.length()-1, sb.length()).append(']').toString();
     }
-    
-    private static String stringifyMap(Map<? extends Obj> map) {
-        StringBuilder sb = new StringBuilder().append('{');
-        for (java.util.Map.Entry<String, ? extends Obj> e : map)
-            sb.append(e.getKey()).append(':')
-                .append(stringify(e.getValue())).append(',');
-        return sb.delete(sb.length()-1, sb.length()).append('}').toString();
-    }
 
     private static String stringifyStr(Str str) {
         StringBuilder sb = new StringBuilder().append('"');
-        Set.of('\b', '\f', '\n', '\r', '\t');
         for (char ch : str.toString().toCharArray()) {
             sb.append(switch(ch) {
                 case '\b' -> "\\b";
@@ -407,7 +412,7 @@ public class JSON<N extends Number> {
                 case '\t' -> "\\t";
                 case '\\' -> "\\\\";
                 case '"' -> "\\\"";
-                default -> ""+ch;
+                default -> ch;
             });
         }
         return sb.append('"').toString();

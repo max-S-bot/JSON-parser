@@ -374,7 +374,14 @@ public class JSON<N extends Number> {
             throw new JSONParseException("Unexpected end of JSON");
     }
 
-    @SuppressWarnings("rawtypes")
+    /**
+     * Returns an ugly print {@link String} representing 
+     * the JSON data. 
+     * @param obj The JSON data to {@code stringify}.
+     * @return A {@link String} representation of the JSON data.
+     * @throws NullPointerException When {@code obj} is {@code null}/
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     public static String stringify(Obj obj) {
         if (obj == null) throw new NullPointerException();
         return switch (obj) {
@@ -385,6 +392,10 @@ public class JSON<N extends Number> {
         };
     }
 
+    /**
+     * @param map A {@link Map} to {@code stringify}.
+     * @return A stringified {@link Map}.
+     */
     private static String stringifyMap(Map<? extends Obj> map) {
         StringBuilder sb = new StringBuilder().append('{');
         for (java.util.Map.Entry<String, ? extends Obj> e : map)
@@ -394,6 +405,10 @@ public class JSON<N extends Number> {
         return sb.delete(sb.length()-1, sb.length()).append('}').toString();
     }
     
+    /**
+     * @param arr A {@link Arr} to {@code stringify}.
+     * @return A stringified {link Arr}.
+     */
     private static String stringifyArr(Arr<? extends Obj> arr) {
         StringBuilder sb = new StringBuilder().append('[');
         for (Obj e : arr)
@@ -401,6 +416,10 @@ public class JSON<N extends Number> {
         return sb.delete(sb.length()-1, sb.length()).append(']').toString();
     }
 
+    /**
+     * @param str A {@link Str} to {@code stringify}.
+     * @return A stringified {@link Str}.
+     */
     private static String stringifyStr(Str str) {
         StringBuilder sb = new StringBuilder().append('"');
         for (char ch : str.toString().toCharArray()) {

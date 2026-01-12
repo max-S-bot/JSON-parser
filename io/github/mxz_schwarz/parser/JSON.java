@@ -123,7 +123,7 @@ public class JSON<N extends Number> {
      * parsed object.
      * @throws JSONParseException when the given object is invalid
      */
-    private Map<? extends Obj> parseMap() {
+    private Map<Obj> parseMap() {
         java.util.Map<String, Obj> map = new HashMap<>();
         idx++;
         for (boolean flag = false;; flag = true) {
@@ -151,7 +151,7 @@ public class JSON<N extends Number> {
      * @throws JSONParseException When the array being parsed 
      * isn't a valid JSON array.
      */
-    private Arr<? extends Obj> parseArr() {
+    private Arr<Obj> parseArr() {
         List<Obj> arr = new LinkedList<>();
         idx++;
         for (boolean flag = false;; flag = true) {
@@ -398,7 +398,7 @@ public class JSON<N extends Number> {
      */
     private static String stringifyMap(Map<? extends Obj> map) {
         StringBuilder sb = new StringBuilder().append('{');
-        for (java.util.Map.Entry<String, ? extends Obj> e : map)
+        for (java.util.Map.Entry<String, ? extends Obj> e : map.toMap().entrySet())
             // method chaining is fun
             sb.append('"').append(e.getKey()).append('"').append(':')
                 .append(stringify(e.getValue())).append(',');
@@ -411,7 +411,7 @@ public class JSON<N extends Number> {
      */
     private static String stringifyArr(Arr<? extends Obj> arr) {
         StringBuilder sb = new StringBuilder().append('[');
-        for (Obj e : arr)
+        for (Obj e : arr.toList())
             sb.append(stringify(e)).append(',');
         return sb.delete(sb.length()-1, sb.length()).append(']').toString();
     }

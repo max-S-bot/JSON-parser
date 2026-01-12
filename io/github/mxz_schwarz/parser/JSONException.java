@@ -22,6 +22,14 @@ public class JSONException extends Exception {
     }
 
     /**
+     * @param cce A {@link ClassCasException} which is 
+     * the cause of {@code this}.
+     */
+    JSONException(ClassCastException cce) {
+        super(cce);
+    }
+
+    /**
      * @param message A {@link String} explaining {@code this}
      * {@link JSONException}.
      */

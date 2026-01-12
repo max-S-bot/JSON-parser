@@ -2,6 +2,7 @@ package io.github.mxz_schwarz.parser;
 
 import java.util.Objects;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A wrapper {@code abstract class} that acts as the 
@@ -78,13 +79,22 @@ public abstract class Obj {
     }
 
     /**
-     * Returns {@code this} if it's an {@link Arr}.
-     * @return {@code this}.
-     * @throws JSONException When {@code this} isn't 
-     * an {@link Arr}.
+     * Convenience method to cast each element in an 
+     * array to a particular type.
+     * @param <T> The desired generic type of the {@link List} 
+     * being returned.
+     * @param clazz The {@link Class} object representing 
+     * the desired type.
+     * @return A list with generic type {@code T}.
+     * @throws JSONException If this {@link Obj} is not an 
+     * {@link Arr} or when not every element is a {@code T}.
      */
-    public <T extends Obj> Arr<T> asArr() throws JSONException {
-        throw new JSONException("not an Arr");
+    public <E> List<E> toList(Class<E> clazz) throws JSONException {
+        throw new JSONException("not an array");
+    }
+
+    public <E extends Obj> Arr<E> castElems(Class<E> clazz) throws JSONException {
+        throw new JSONException("not an array");
     }
 
     /**
@@ -94,17 +104,25 @@ public abstract class Obj {
      * @throws JSONException When {@code this}
      * isn't a {@link Map}.
      */
-    public <T extends Obj> java.util.Map<String, T> toMap() throws JSONException {
+    public <T extends Obj> Map<String, T> toMap() throws JSONException {
         throw new JSONException("not a Map");
     }
 
     /**
-     * Return {@code this} if it's a {@link Map}.
-     * @return {@code this}.
-     * @throws JSONException When {@code this}
-     * is not a {@link Map}.
+     * 
+     * @param <T> The desired generic type of values
+     * in the Map
+     * @param clazz The {@link Class} object representing 
+     * the desired type.
+     * @return A {@link Map} with gener
+     * @throws JSONException When {@code this} isn't a 
+     * {@link Map} or when not every element is a {@code T}.
      */
-    public <T extends Obj> Map<T> asMap() throws JSONException {
+    public <E> Map<String, E> toMap(Class<E> clazz) throws JSONException {
+        throw new JSONException("not a Map");
+    } 
+
+    public <E extends Obj> io.github.mxz_schwarz.parser.Map<E> castVals(Class<E> clazz) throws JSONException {
         throw new JSONException("not a Map");
     }
 
@@ -112,8 +130,6 @@ public abstract class Obj {
      * @return The value wrapped in {@code this}.
      */
     abstract Object val();
-
-    abstract Type type();
 
     @Override
     public String toString() {

@@ -16,11 +16,6 @@ public class Null extends Obj {
     }
 
     @Override
-    Type type() {
-        return Type.NULL;
-    }
-
-    @Override
     Object val() {
         return null;
     }

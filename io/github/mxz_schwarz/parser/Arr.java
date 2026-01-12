@@ -1,12 +1,13 @@
 package io.github.mxz_schwarz.parser;
 
 import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Wrapper class for JSON arrays.
  * @author max-S-bot
  */
-public class Arr<T extends Obj> extends Obj implements Iterable<T> {
+public class Arr<T extends Obj> extends Obj {
 
     private final List<T> val;
 
@@ -14,14 +15,32 @@ public class Arr<T extends Obj> extends Obj implements Iterable<T> {
         this.val = List.copyOf(val);
     }
 
-    @Override 
-    @SuppressWarnings("unchecked")
-    public Arr<T> asArr() throws JSONException {
-        return this;
+    @Override
+    public <E> List<E> toList(Class<E> clazz) throws JSONException {
+        List<E> list = new ArrayList<E>(val.size());
+        for (Obj e : val) 
+            try {
+                list.add(clazz.cast(e.val()));
+            } catch (ClassCastException cce) {
+                throw new JSONException(cce);
+            }
+        return List.copyOf(list);
     }
 
-    @Override 
-    @SuppressWarnings("unchecked")
+    @Override
+    public <E extends Obj> Arr<E> castElems(Class<E> clazz) throws JSONException {
+        List<E> list = new ArrayList<>(val.size());
+        for (T t : val)
+            try {
+                list.add(clazz.cast(t));
+            } catch (ClassCastException cce) {
+                throw new JSONException(cce);
+            }
+        return new Arr<>(list);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked") 
     public List<T> toList() {
         return val;
     }
@@ -29,15 +48,5 @@ public class Arr<T extends Obj> extends Obj implements Iterable<T> {
     @Override 
     Object val() {
         return val;
-    }
-
-    @Override 
-    Type type() {
-        return null;
-    }
-
-    @Override
-    public java.util.Iterator<T> iterator() {
-        return val.iterator();
     }
 }

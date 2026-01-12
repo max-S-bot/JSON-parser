@@ -23,12 +23,7 @@ public class Num<N extends Number> extends Obj {
     public N toNum() {
         return val;
     }
-
-    @Override
-    Type type() {
-        return Type.NUM;
-    }
-
+    
     @Override 
     Object val() {
         return val;

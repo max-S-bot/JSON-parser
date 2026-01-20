@@ -142,6 +142,8 @@ public class JSON<N extends Number> {
             if (jsonStr.charAt(idx++) != ':')
                 throw new JSONParseException("Expected entry");
             skipWS();
+            if (map.containsKey(name))
+                throw new JSONParseException("Unexpected duplicate key");
             map.put(name, parseVal());
         }
     }

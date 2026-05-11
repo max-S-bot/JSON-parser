@@ -7,11 +7,11 @@ import java.util.Map.Entry;
  * A wrapper class for JSON objects.
  * @author max-S-bot
  */
-public class Map<T extends Obj> extends Obj {
+public final class Map<T extends Obj> extends Obj {
 
     private final java.util.Map<String, T> val;
 
-    Map(java.util.Map<String, T> val) {
+    public Map(java.util.Map<String, T> val) {
         this.val = java.util.Map.copyOf(val);
     }
 
@@ -40,6 +40,15 @@ public class Map<T extends Obj> extends Obj {
             map.put(e.getKey(), clazz.cast(e.getValue()));
         }
         return new Map<>(map);
+    }
+
+    @Override
+    public java.util.Map<String, Object> toStdLibObj() {
+        java.util.Map<String, Object> map = new HashMap<>();
+        for (Entry<String, T> e : val.entrySet()) {
+            map.put(e.getKey(), e.getValue().toStdLibObj());
+        }
+        return map;
     }
     
     @Override 

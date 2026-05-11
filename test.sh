@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-main_dir="/home/mxz-schwarz/JSON-parser"
-
-cd "$main_dir"
+cd $HOME/JSON-parser
 
 git clone https://github.com/briandfoy/json-acceptance-tests
 

@@ -1,23 +1,23 @@
 package io.github.mxz_schwarz.parser;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Wrapper class for JSON arrays.
  * @author max-S-bot
  */
-public class Arr<T extends Obj> extends Obj {
+public final class Arr<T extends Obj> extends Obj {
 
     private final List<T> val;
 
-    Arr(List<T> val) {
+    public Arr(List<T> val) {
         this.val = List.copyOf(val);
     }
 
     @Override
     public <E> List<E> toList(Class<E> clazz) throws JSONException {
-        List<E> list = new ArrayList<E>(val.size());
+        List<E> list = new ArrayList<>(val.size());
         for (Obj e : val) 
             try {
                 list.add(clazz.cast(e.val()));
@@ -43,6 +43,15 @@ public class Arr<T extends Obj> extends Obj {
     @SuppressWarnings("unchecked") 
     public List<T> toList() {
         return val;
+    }
+
+    @Override
+    public List<Object> toStdLibObj() {
+        List<Object> list = new ArrayList<>();
+        for (T e : val) {
+            list.add(e.toStdLibObj());
+        }
+        return list;
     }
 
     @Override 

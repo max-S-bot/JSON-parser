@@ -1,8 +1,7 @@
 package io.github.mxz_schwarz.parser;
 
-import java.util.Objects;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 /**
  * A wrapper {@code abstract class} that acts as the 
@@ -11,7 +10,7 @@ import java.util.Map;
  * a client to perform less manual casting. 
  * @author max-S-bot
  */
-public abstract class Obj {
+public sealed abstract class Obj permits Map, Arr, Str, Num, Bool, Null {
 
     /**
      * Returns a {@link Number} when {@code this}
@@ -25,10 +24,10 @@ public abstract class Obj {
     }
     
     /**
-     * 
-     * @param <N>
-     * @return A {@link Num<N>} desc
-     * @throws JSONException
+     * Pretty much casts {@code this} to a {@link Num<N>}
+     * @param <N> The generic Type of this instance.
+     * @return A {@link Num<N>} when {@code this} is a {@link Num<N>}.
+     * @throws JSONException When this is not a {@link Num<N>}
      */
     public <N extends Number> Num<N> asNum() throws JSONException {
         throw new JSONException("not a Num");
@@ -104,7 +103,7 @@ public abstract class Obj {
      * @throws JSONException When {@code this}
      * isn't a {@link Map}.
      */
-    public <T extends Obj> Map<String, T> toMap() throws JSONException {
+    public <T extends Obj> java.util.Map<String, T> toMap() throws JSONException {
         throw new JSONException("not a Map");
     }
 
@@ -118,12 +117,16 @@ public abstract class Obj {
      * @throws JSONException When {@code this} isn't a 
      * {@link Map} or when not every element is a {@code T}.
      */
-    public <E> Map<String, E> toMap(Class<E> clazz) throws JSONException {
+    public <E> java.util.Map<String, E> toMap(Class<E> clazz) throws JSONException {
         throw new JSONException("not a Map");
     } 
 
-    public <E extends Obj> io.github.mxz_schwarz.parser.Map<E> castVals(Class<E> clazz) throws JSONException {
+    public <E extends Obj> Map<E> castVals(Class<E> clazz) throws JSONException {
         throw new JSONException("not a Map");
+    }
+
+    public Object toStdLibObj() {
+        return val();
     }
 
     /** 

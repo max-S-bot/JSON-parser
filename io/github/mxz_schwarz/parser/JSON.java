@@ -1,13 +1,13 @@
 package io.github.mxz_schwarz.parser;
 
-import java.util.List;
-import java.util.Set;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Files;
 
 /**
  * {@code class} that does most of the parsing legwork via the {@code public} 
@@ -49,7 +49,7 @@ public class JSON<N extends Number> {
         Function<String, N> numParser) 
         throws JSONException {
         try {
-            return new JSON<N>(jsonStr, numParser).obj;
+            return new JSON<>(jsonStr, numParser).obj;
         } catch (JSONParseException jpe) {
             throw new JSONException(jpe);
         }
@@ -111,6 +111,7 @@ public class JSON<N extends Number> {
         this.jsonStr = jsonStr;
         this.len = jsonStr.length(); 
         this.numParser = numParser;
+        throwIfEnd();
         skipWS();
         this.obj = parseVal();
         skipWS();
@@ -229,12 +230,12 @@ public class JSON<N extends Number> {
             else num.append(jsonStr.charAt(++idx));
         if (jsonStr.charAt(idx) == '0')
             if (idx+1 == len)
-                return new Num<N>(numParser.apply("0"));
+                return new Num<>(numParser.apply("0"));
             else if (jsonStr.charAt(idx+1) == '.')
                 return parseDecimal(num);
             else if(jsonStr.charAt(idx) == 'e' || jsonStr.charAt(idx) == 'E')
                 return parseSciNot(num);
-            else return new Num<N>(numParser.apply("0"));
+            else return new Num<>(numParser.apply("0"));
         while (idx+1 != len && DIGITS.contains(jsonStr.charAt(idx+1)))
             num.append(jsonStr.charAt(++idx));
         if (idx+1 != len) 
@@ -243,7 +244,7 @@ public class JSON<N extends Number> {
             else if (jsonStr.charAt(idx+1) == '.')
                 return parseDecimal(num);
         try {
-            return new Num<N>(numParser.apply(num.toString()));
+            return new Num<>(numParser.apply(num.toString()));
         } catch (NumberFormatException nfe) {
             throw new JSONParseException(nfe, "Could not parse number");
         }
@@ -264,7 +265,7 @@ public class JSON<N extends Number> {
         if (idx+1 != len && (jsonStr.charAt(idx+1) == 'e' || jsonStr.charAt(idx+1) == 'E'))
             return parseSciNot(num);
         try {
-            return new Num<N>(numParser.apply(num.toString()));
+            return new Num<>(numParser.apply(num.toString()));
         } catch (NumberFormatException nfe) {
             throw new JSONParseException(nfe, "Could not parse number");
         }
@@ -289,7 +290,7 @@ public class JSON<N extends Number> {
             num.append(jsonStr.charAt(++idx));
         String numStr = num.toString();
         try {
-            return new Num<N>(numParser.apply(numStr));
+            return new Num<>(numParser.apply(numStr));
         } catch (NumberFormatException nfe) {
             throw new JSONParseException(nfe, "Could not parse number");
         }

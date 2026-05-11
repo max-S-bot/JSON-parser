@@ -4,11 +4,11 @@ package io.github.mxz_schwarz.parser;
  * A wrapper class for JSON numbers.
  * @author max-S-bot
  */
-public class Num<N extends Number> extends Obj {
+public final class Num<N extends Number> extends Obj {
 
     private final N val;
 
-    Num(N val) {
+    public Num(N val) {
         this.val = val;
     }
 
@@ -21,6 +21,11 @@ public class Num<N extends Number> extends Obj {
     @Override
     @SuppressWarnings("unchecked")
     public N toNum() {
+        return val;
+    }
+
+    @Override
+    public N toStdLibObj() {
         return val;
     }
     

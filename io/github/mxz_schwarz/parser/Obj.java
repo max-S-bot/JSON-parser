@@ -148,7 +148,7 @@ public sealed abstract class Obj permits Map, Arr, Str, Num, Bool, Null {
 
     @Override 
     public int hashCode() {
-        return Objects.hashCode(val());
+        return val.hashCode();
     }
 
 }

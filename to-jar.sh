@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-cd $HOME/JSON-parser
-
 mkdir bin
 javac -d bin io/github/mxz_schwarz/parser/*.java
 cd bin
